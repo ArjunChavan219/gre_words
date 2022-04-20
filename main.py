@@ -1,54 +1,12 @@
-import pymongo
-import pandas as pd
 from helper.functions import *
-
-client = pymongo.MongoClient("mongodb://localhost:27017/")
-
-
-class Data:
-
-    def __init__(self):
-        """
-        Class init
-        """
-        db = client["gre_"]
-        self.col = db["words_last_new"]
-        self.data = self.get_database()
-
-    def get_database(self):
-        df = pd.DataFrame(self.col.find({}, {"_id": 0}))
-        df.definitions = df.definitions.str.join("\n")
-        df.examples = df.examples.str.join("\n")
-        df.syns = df.syns.str.join(", ")
-        df.ants = df.ants.str.join(", ")
-        return df.astype(object)
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, item):
-        if type(item) == tuple:
-            return self.data.loc[item[0]][item[1]]
-        else:
-            return dict(self.data.loc[item])
-
-    def __setitem__(self, item, value):
-        self.data.at[item] = value
-        self.col.update_one({"word": self.data["word"][item[0]]}, {"$set": {item[1]: value}})
-
-    def get_counts(self, item):
-        return list(self.data[item].value_counts().sort_index().items())
-
-    def get_level_indices(self, level):
-        return self.data[self.data.level == level].index.to_numpy()
+from helper.data import MongoDb
 
 
 class Main:
 
     def __init__(self, window: Tk):
         #
-        self.data = Data()
-        self.db = client["gre_"]
+        self.data = MongoDb()
 
         # TK Constants:
         from helper.classes import CLASSES

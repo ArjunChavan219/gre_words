@@ -5,9 +5,6 @@ from helper.test import Test
 class TestReport:
 
     def __init__(self, parent: Test):
-        # Initialize MongoDB
-        self.col = parent.parent.db["words_last_new"]
-
         # Initialize TK Widgets
         self.parent = parent
         self.frame = self.parent.parent.init_frames(("Test Report", "Report"), 2, 0, 4, (50, 0))[0]
@@ -43,5 +40,7 @@ class TestReport:
             values = (wrap_text(word["definitions" if self.parent.test_type else "word"], 75),
                       check, wrap_text(options[report], 75), wrap_text(options[0], 75), mark)
             self.tree.insert("", 'end', values=values, tag=("blue" if itr % 2 != 0 else ""))
-            self.col.update_one({"word": word["word"]}, {"$inc": {"score": 1 if report == 0 else 0, "test": 1},
-                                                         "$set": {"marked": self.parent.marked[itr]}})
+
+            self.parent.parent.data[self.parent.word_indices[itr], "score"] += 1 if report == 0 else 0
+            self.parent.parent.data[self.parent.word_indices[itr], "test"] += 1
+            self.parent.parent.data[self.parent.word_indices[itr], "marked"] = self.parent.marked[itr]
