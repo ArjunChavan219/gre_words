@@ -1,0 +1,10 @@
+COLUMNS = ["definitions", "syns", "ants", "examples"]
+LABELS = [("Definitions", (10, 60)), ("Synonyms", (10, 15)), ("Antonyms", (10, 15)), ("Examples", (10, 60))]
+BACKGROUND_COLOR = "#8CF3D4"
+HOME_COLOR = "#03fc62"
+SELECT_COLOR = "#4FA9EB"
+NEXT_COLOR = "#E46060"
+ENTER_COLOR = "#BA5CF3"
+CLASS_COLORS = ["#4FA9EB", "#BA5CF3", "#E46060", "#FFE800"]
+BUTTON_FONT = ("Ariel", 24, "bold")
+CANVAS_FONT = ("Ariel", 40, "italic")
