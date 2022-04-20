@@ -8,11 +8,7 @@ class Practice:
 
     def __init__(self, parent: Main):
         # Initialize MongoDB
-        self.old_col = parent.db["words_first"]
-        self.new_col = parent.db["words_last_new"]
-        self.words = self.old_col.find(
-            {"learnt": False},
-            {"_id": 0, "word": 1, "data": 1})
+        self.words = parent.data.get_word_data()
         self.current_word = {}
 
         # Initialize TK Widgets
@@ -47,7 +43,7 @@ class Practice:
         }
 
         self.canvas.itemconfig(self.canvas_title, text=f"Word: {word}")
-        count = self.old_col.count_documents({"learnt": False})
+        count = self.parent.data.get_remaining_count()
         self.next_button.configure(text=f"Next ({count})")
 
         for i, (select_widget, enter_widget, col) in enumerate(zip(self.select_boxes, self.enter_boxes, COLUMNS)):
@@ -68,17 +64,15 @@ class Practice:
         self.parent.refresh_child(self.frame)
 
     def save_word(self):
+
         for i, (enter_widget, col) in enumerate(zip(self.enter_boxes, COLUMNS)):
             data = enter_widget.get("1.0", "end-1c")
             if data == "":
                 messagebox.showerror("Error", "Enter data in all columns before saving.")
                 return
-            self.current_word[col] = data.strip().split(", " if 0 < i < 3 else "\n")
+            self.current_word[col] = data.strip()
 
-        self.old_col.update_one(
-            {"word": self.current_word["word"]},
-            {"$set": {"learnt": True}}
-        )
-        self.new_col.insert_one(self.current_word)
+        self.parent.data.insert_one(self.current_word)
+
         self.current_word = {}
         self.get_word()

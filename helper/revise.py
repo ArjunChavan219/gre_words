@@ -1,4 +1,4 @@
-from main import Main, Data
+from main import Main
 from helper.functions import *
 from tkinter.simpledialog import askstring
 
@@ -7,11 +7,7 @@ class Revise:
 
     def __init__(self, parent: Main):
         # Initialize MongoDB
-        self.col = parent.db["words_last_new"]
-        self.words = []
-        for data in self.col.find({}, {"_id": 0, "word": 1, "prompt": 1, "score": 1,
-                                       "test": 1, "marked": 1, "level": 1}).sort("word", 1):
-            self.words.append(list(data.values()))
+        self.words = parent.data.get_revised_list()
 
         # Initialize TK Widgets
         self.parent = parent
@@ -59,29 +55,25 @@ class Revise:
         def set_value():
             value: str = box.get()
             if value == "All":
-                textbox.delete("1.0", "end-1c")
-                textbox.insert("end", len(self.words), "centered")
+                query = len(self.words)
             elif value == "Marked":
-                textbox.delete("1.0", "end-1c")
-                query = self.col.count_documents({"marked": True})
-                textbox.insert("end", query, "centered")
+                query = self.parent.data.get_count("marked", True)
             else:
-                textbox.delete("1.0", "end-1c")
                 param = int(askstring("Query", f"{value}: "))
-                query = self.col.count_documents({value.lower(): param})
-                textbox.insert("end", query, "centered")
+                query = self.parent.data.get_count(value.lower(), param)
+            textbox.delete("1.0", "end-1c")
+            textbox.insert("end", query, "centered")
         box.bind("<<ComboboxSelected>>", lambda event: set_value())
         set_value()
 
     def statistics(self):
-        data = Data()
         new_window = self.new_window(("Word Statistics", "Counts"))
 
         def get_table(col):
             frame = Frame(new_window, bg=BACKGROUND_COLOR)
             frame.grid(row=1, column=col[0])
             tree, style = get_tree(frame, (150, 150), (col[1].title(), "Counts"), None)
-            counts = data.get_counts(col[1])
+            counts = self.parent.data.get_counts(col[1])
             for itr, count in enumerate(counts):
                 tree.insert("", 'end', text=itr, values=count)
             alternate(tree)
@@ -118,15 +110,15 @@ class Revise:
         tree_item = self.tree.selection()[0]
         item = self.tree.item(tree_item, "text")
         word, prompt, score, test, marked, level = self.get_values(item)
-        word_data = self.col.find_one({"word": word}, {"_id": 0, "definitions": 1, "syns": 1, "ants": 1, "examples": 1})
+        word_index = self.parent.data.get_index(word)
+        word_data = self.parent.data[word_index]
         new_window = self.new_window(("Word Revision", f"Word: {word}"))
 
         # Labels and Boxes
         select_boxes = [get_widgets(1, i, SELECT_COLOR, new_window, 2) for i in range(4)]
         for i, (select_widget, col) in enumerate(zip(select_boxes, COLUMNS)):
             select_widget.delete("1.0", "end-1c")
-            data = (", " if 0 < i < 3 else "\n").join(word_data[col])
-            select_widget.insert("end", data)
+            select_widget.insert("end", word_data[col])
             select_widget.configure(state="disabled")
 
         # Frame
@@ -165,7 +157,8 @@ class Revise:
                 new_prompt, new_level = prompt_box.get("1.0", "end-1c"), level_box.get("1.0", "end-1c")
                 self.words[item][1] = new_prompt
                 self.words[item][5] = new_level
-                self.col.update_one({"word": word}, {"$set": {"prompt": new_prompt, "level": int(new_level)}})
+                self.parent.data[word_index, "prompt"] = new_prompt
+                self.parent.data[word_index, "level"] = int(new_level)
                 self.tree.item(tree_item, text=item, values=(word, new_prompt, score, test, marked, new_level))
             new_window.destroy()
             self.parent.window.focus_set()

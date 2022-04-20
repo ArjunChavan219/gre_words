@@ -1,5 +1,5 @@
 import numpy as np
-from main import Main, Data
+from main import Main
 from helper.functions import *
 from tkinter import messagebox
 from tkinter.simpledialog import askstring
@@ -29,7 +29,7 @@ class QuickTest:
             self.test_type = True
 
         # Initialize MongoDB
-        self.col = parent.db["words_last_new"]
+        # self.col = parent.db["words_last_new"]
         self.parent = parent
         self.level = level
         self.words = []
@@ -93,7 +93,6 @@ class QuickTest:
         return radio_button
 
     def formulate(self):
-        self.parent.data = Data()
         length = len(self.parent.data)
         indexes = np.arange(length).reshape(length, 1)
         self.word_indices = self.parent.data.get_level_indices(self.level)
