@@ -377,11 +377,11 @@ charlatan -> flamboyant deveiver
 fleece -> rip off, overprices stuff
 
 ### Aot
-### Eren
+#### Eren
 alacrity -> eager to do something
 belligerent -> eager to fight
 
-### Erwin
+#### Erwin
 incisive -> draw fine conclusions
 sagacious -> acute insight, good judgment
 resolution -> determination, resolve
