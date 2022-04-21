@@ -104,16 +104,16 @@ class Revise:
         alternate(self.tree)
 
     def get_values(self, itr):
-        word, prompt, score, test, marked, level = self.words[itr]
+        word, prompt, score, test, marked, level, tags = self.words[itr]
         final_score = "Not done" if test == 0 else f"{round(score / test * 100, 2)}%"
-        return word, prompt, final_score, test, "❌" if marked else "", level
+        return word, prompt, final_score, test, "❌" if marked else "", level, tags
 
     def get_word(self):
         if len(self.tree.selection()) == 0:
             return
         tree_item = self.tree.selection()[0]
         item = self.tree.item(tree_item, "text")
-        word, prompt, score, test, marked, level = self.get_values(item)
+        word, prompt, score, test, marked, level, tags = self.get_values(item)
         word_index = self.parent.data.get_index(word)
         word_data = self.parent.data[word_index]
         new_window = self.new_window(("Word Revision", f"Word: {word}"))
