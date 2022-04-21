@@ -63,6 +63,7 @@ class Revise:
                 query = self.parent.data.get_count(value.lower(), param)
             textbox.delete("1.0", "end-1c")
             textbox.insert("end", query, "centered")
+
         box.bind("<<ComboboxSelected>>", lambda event: set_value())
         set_value()
 
@@ -94,6 +95,7 @@ class Revise:
             if col != "1" and not reverse:
                 value *= -1
             return value, self.tree.set(parent, "1"), parent
+
         children = [get_children(k) for k in self.tree.get_children('')]
         children.sort(reverse=(reverse if col == "1" or (col != "1" and not reverse) else (not reverse)))
         for index, (val1, val2, k) in enumerate(children):
@@ -107,6 +109,8 @@ class Revise:
         return word, prompt, final_score, test, "❌" if marked else "", level
 
     def get_word(self):
+        if len(self.tree.selection()) == 0:
+            return
         tree_item = self.tree.selection()[0]
         item = self.tree.item(tree_item, "text")
         word, prompt, score, test, marked, level = self.get_values(item)
@@ -138,22 +142,26 @@ class Revise:
 
         prompt_box, level_box = get_input_gui(0, "Prompt", prompt), get_input_gui(1, "Level", level)
 
-        # Save Button
-        save_button = get_button(frame, "Close", NEXT_COLOR, self.query, 0, 3, 1, (0, 0))
-        save_button.configure(width=200, padx=100)
+        # Button
+        close_button = get_button(frame, "Close", NEXT_COLOR, self.query, 0, 3, 1, (0, 0))
+        close_button.configure(width=200, padx=100)
+        next_button = get_button(frame, "Next", NEXT_COLOR, self.query, 1, 3, 1, (0, 0))
+        next_button.configure(width=200, padx=100)
 
         def detect_change():
             new_prompt, new_level = prompt_box.get("1.0", "end-1c"), level_box.get("1.0", "end-1c")
             prompt_box.tag_add("centered", 1.0, "end")
             level_box.tag_add("centered", 1.0, "end")
             if new_prompt == prompt and new_level == level:
-                save_button.configure(text="Close", width=100)
+                close_button.configure(text="Close", width=100)
+                next_button.configure(text="Next", width=100)
             else:
-                save_button.configure(text="Save n Close", width=200)
+                close_button.configure(text="Save n Close", width=200)
+                next_button.configure(text="Save n Next", width=200)
             pass
 
         def save_prompt():
-            if save_button['text'] != "Close":
+            if close_button['text'] != "Close":
                 new_prompt, new_level = prompt_box.get("1.0", "end-1c"), level_box.get("1.0", "end-1c")
                 self.words[item][1] = new_prompt
                 self.words[item][5] = new_level
@@ -161,8 +169,22 @@ class Revise:
                 self.parent.data[word_index, "level"] = int(new_level)
                 self.tree.item(tree_item, text=item, values=(word, new_prompt, score, test, marked, new_level))
             new_window.destroy()
+            self.tree.selection_remove(tree_item)
+
+        def close_prompt():
+            save_prompt()
             self.parent.window.focus_set()
+
+        def next_prompt():
+            save_prompt()
+            next_item = self.tree.next(tree_item)
+            if next_item != "":
+                self.tree.selection_set(next_item)
+                self.get_word()
+            else:
+                self.parent.window.focus_set()
 
         prompt_box.bind("<KeyRelease>", lambda event: detect_change())
         level_box.bind("<KeyRelease>", lambda event: detect_change())
-        save_button.configure(command=save_prompt)
+        close_button.configure(command=close_prompt)
+        next_button.configure(command=next_prompt)
