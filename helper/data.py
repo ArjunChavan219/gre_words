@@ -61,10 +61,18 @@ class MongoDb:
         return self.old_col.find({"learnt": False}, {"_id": 0, "word": 1, "data": 1})
 
     def insert_one(self, data):
-        self.data.loc[len(self.data)] = data.values()
+        extra_data = {
+            "prompt": "",
+            "score": 0,
+            "test": 0,
+            "marked": False,
+            "level": 2,
+            "tags": ""
+        }
+        self.data.loc[len(self.data)] = [*data.values(), *extra_data.values()]
         for i, col in enumerate(COLUMNS):
             data[col] = data[col].split(", " if 0 < i < 3 else "\n")
-        self.col.insert_one(data)
+        self.col.insert_one(data | extra_data)
         self.old_col.update_one(
             {"word": data["word"]},
             {"$set": {"learnt": True}}
