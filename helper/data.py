@@ -55,7 +55,7 @@ class MongoDb:
         return self.old_col.count_documents({"learnt": False})
 
     def get_revised_list(self):
-        return self.data[["word", "prompt", "score", "test", "marked", "level"]].sort_values("word").to_numpy()
+        return self.data[["word", "prompt", "score", "test", "marked", "level", "tags"]].sort_values("word").to_numpy()
 
     def get_word_data(self):
         return self.old_col.find({"learnt": False}, {"_id": 0, "word": 1, "data": 1})
