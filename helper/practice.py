@@ -34,12 +34,7 @@ class Practice:
             "definitions": "",
             "syns": "",
             "ants": "",
-            "examples": "",
-            "prompt": "",
-            "score": 0,
-            "test": 0,
-            "marked": False,
-            "level": 2
+            "examples": ""
         }
 
         self.canvas.itemconfig(self.canvas_title, text=f"Word: {word}")
