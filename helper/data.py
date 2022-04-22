@@ -15,7 +15,11 @@ class MongoDb:
         self.col = db["words_last_new"]
         self.data_col = db["words_first"]
         self.data: pd.DataFrame = self.get_database()
-        self.tags: Tags = Tags("Tags", db["words_tags"].find({}, {"_id": 0})[0], 0)
+
+        self.tags: Tags = Tags(
+            db["words_tags"].find({}, {"_id": 0})[0],
+            self.data[["word", "tag"]].set_index("word").to_dict()["tag"]
+        )
 
     def get_database(self) -> pd.DataFrame:
         df = pd.DataFrame(self.col.find({}, {"_id": 0}))
@@ -57,7 +61,7 @@ class MongoDb:
         return self.data_col.count_documents({"learnt": False})
 
     def get_revised_list(self):
-        return self.data[["word", "prompt", "score", "test", "marked", "level", "tags"]].sort_values("word").to_numpy()
+        return self.data[["word", "prompt", "score", "test", "marked", "level", "tag"]].sort_values("word").to_numpy()
 
     def get_word_data(self):
         return self.data_col.find({"learnt": False}, {"_id": 0, "word": 1, "data": 1})
