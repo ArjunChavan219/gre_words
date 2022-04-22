@@ -104,16 +104,17 @@ class Revise:
         alternate(self.tree)
 
     def get_values(self, itr):
-        word, prompt, score, test, marked, level, tags = self.words[itr]
+        word, prompt, score, test, marked, level, tag = self.words[itr]
         final_score = "Not done" if test == 0 else f"{round(score / test * 100, 2)}%"
-        return word, prompt, final_score, test, "❌" if marked else "", level, tags
+        return word, prompt, final_score, test, "❌" if marked else "", level, tag
 
     def get_word(self):
         if len(self.tree.selection()) == 0:
             return
         tree_item = self.tree.selection()[0]
+        self.tree.selection_remove(tree_item)
         item = self.tree.item(tree_item, "text")
-        word, prompt, score, test, marked, level, tags = self.get_values(item)
+        word, prompt, score, test, marked, level, tag = self.get_values(item)
         word_index = self.parent.data.get_index(word)
         word_data = self.parent.data[word_index]
         new_window = self.new_window(("Word Revision", f"Word: {word}"))
@@ -129,54 +130,44 @@ class Revise:
         frame = Frame(new_window, bg=BACKGROUND_COLOR)
         frame.grid(row=3, column=0, columnspan=4)
 
-        def get_input_gui(row, label_text, box_text):
-            label = Label(frame, text=label_text, bg=SELECT_COLOR, fg="black", font=("Ariel", 20), width=10)
-            label.grid(row=row, column=0, padx=100)
-            box = ScrolledText(frame, height=1, width=60, font=("Ariel", 14), bg="white",
+        def detect_change(gui, data):
+            new_change = gui[0].get("1.0", "end-1c")
+            gui[0].tag_add("centered", 1.0, "end")
+            if new_change == data:
+                gui[1].grid_forget()
+            else:
+                gui[1].grid(row=0, column=3, columnspan=1)
+
+        def save_change(gui, itr, key):
+            new_change = gui[0].get("1.0", "end-1c")
+            self.words[item][itr] = new_change
+            self.parent.data[word_index, key] = new_change if key != "level" else int(new_change)
+            self.tree.item(tree_item, text=item, values=self.get_values(item))
+
+        def get_input_gui(row: int, label_text: str, box_text: str, index: int):
+            gui_frame = Frame(frame, bg=BACKGROUND_COLOR)
+            gui_frame.grid(row=row, column=0, columnspan=4, pady=(0, 10))
+            label = Label(gui_frame, text=label_text, bg=SELECT_COLOR, fg="black", font=("Ariel", 20), width=10)
+            label.grid(row=0, column=0, padx=100)
+            box = ScrolledText(gui_frame, height=1, width=60, font=("Ariel", 14), bg="white",
                                fg="black", wrap=WORD, insertbackground="black")
-            box.grid(row=row, column=1, columnspan=2)
+            box.grid(row=0, column=1, columnspan=2, padx=(0, 50))
             box.tag_configure("centered", justify="center")
             box.delete("1.0", "end-1c")
             box.insert("end", box_text, "centered")
-            return box
+            button = get_button(gui_frame, f"Save {label_text}", "#BA5CF3", self.query, 0, 3, 1, (0, 10))
+            box.bind("<KeyRelease>", lambda event: detect_change((box, button), box_text))
+            button.configure(width=200, padx=50, font=("Ariel", 22),
+                             command=lambda: save_change((box, button), index, label_text.lower()))
+            button.grid_forget()
+            return box, button
 
-        prompt_box, level_box = get_input_gui(0, "Prompt", prompt), get_input_gui(1, "Level", level)
-
-        # Button
-        close_button = get_button(frame, "Close", NEXT_COLOR, self.query, 0, 3, 1, (0, 0))
-        close_button.configure(width=200, padx=100)
-        next_button = get_button(frame, "Next", NEXT_COLOR, self.query, 1, 3, 1, (0, 0))
-        next_button.configure(width=200, padx=100)
-
-        def detect_change():
-            new_prompt, new_level = prompt_box.get("1.0", "end-1c"), level_box.get("1.0", "end-1c")
-            prompt_box.tag_add("centered", 1.0, "end")
-            level_box.tag_add("centered", 1.0, "end")
-            if new_prompt == prompt and new_level == level:
-                close_button.configure(text="Close", width=100)
-                next_button.configure(text="Next", width=100)
-            else:
-                close_button.configure(text="Save n Close", width=200)
-                next_button.configure(text="Save n Next", width=200)
-            pass
-
-        def save_prompt():
-            if close_button['text'] != "Close":
-                new_prompt, new_level = prompt_box.get("1.0", "end-1c"), level_box.get("1.0", "end-1c")
-                self.words[item][1] = new_prompt
-                self.words[item][5] = new_level
-                self.parent.data[word_index, "prompt"] = new_prompt
-                self.parent.data[word_index, "level"] = int(new_level)
-                self.tree.item(tree_item, text=item, values=(word, new_prompt, score, test, marked, new_level))
+        def close_window():
             new_window.destroy()
-            self.tree.selection_remove(tree_item)
-
-        def close_prompt():
-            save_prompt()
             self.parent.window.focus_set()
 
-        def next_prompt():
-            save_prompt()
+        def next_window():
+            new_window.destroy()
             next_item = self.tree.next(tree_item)
             if next_item != "":
                 self.tree.selection_set(next_item)
@@ -184,7 +175,16 @@ class Revise:
             else:
                 self.parent.window.focus_set()
 
-        prompt_box.bind("<KeyRelease>", lambda event: detect_change())
-        level_box.bind("<KeyRelease>", lambda event: detect_change())
-        close_button.configure(command=close_prompt)
-        next_button.configure(command=next_prompt)
+        entries = [("Prompt", prompt, 1), ("Level", level, 5), ("Tag", tag, 6)]
+        prompt_gui, level_gui, tag_gui = [get_input_gui(i, *entry) for i, entry in enumerate(entries)]
+        tag_gui[0].configure(state="disabled")
+        tag_gui[0].bind("<Double-1>",
+                        lambda event: self.parent.data.tags.graph(self.new_window, word, tag_gui, detect_change))
+
+        # Buttons
+        button_frame = Frame(frame, bg=BACKGROUND_COLOR)
+        button_frame.grid(row=4, column=0, columnspan=4)
+        close_button = get_button(button_frame, "Close", "#4FA9EB", self.query, 0, 1, 1, (25, 0))
+        close_button.configure(command=close_window)
+        next_button = get_button(button_frame, "Next", NEXT_COLOR, self.query, 0, 2, 1, (25, 0))
+        next_button.configure(command=next_window)
