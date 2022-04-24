@@ -1,5 +1,6 @@
 from main import Main
 from helper.functions import *
+from helper.tags import Graph
 from tkinter.simpledialog import askstring
 
 
@@ -177,14 +178,13 @@ class Revise:
 
         entries = [("Prompt", prompt, 1), ("Level", level, 5), ("Tag", tag, 6)]
         prompt_gui, level_gui, tag_gui = [get_input_gui(i, *entry) for i, entry in enumerate(entries)]
+        graph = Graph(self.new_window, word, tag_gui, detect_change, self.parent.data.tags)
         tag_gui[0].configure(state="disabled")
         tag_gui[0].bind("<Double-1>",
-                        lambda event: self.parent.data.tags.graph(self.new_window, word, tag_gui, detect_change))
+                        lambda event: graph())
 
         # Buttons
         button_frame = Frame(frame, bg=BACKGROUND_COLOR)
         button_frame.grid(row=4, column=0, columnspan=4)
-        close_button = get_button(button_frame, "Close", "#4FA9EB", self.query, 0, 1, 1, (25, 0))
-        close_button.configure(command=close_window)
-        next_button = get_button(button_frame, "Next", NEXT_COLOR, self.query, 0, 2, 1, (25, 0))
-        next_button.configure(command=next_window)
+        get_button(button_frame, "Close", "#4FA9EB", close_window, 0, 1, 1, (25, 0))
+        get_button(button_frame, "Next", NEXT_COLOR, next_window, 0, 2, 1, (25, 0))
