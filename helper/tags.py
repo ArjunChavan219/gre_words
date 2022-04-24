@@ -57,7 +57,7 @@ class Graph:
         button_frame = Frame(self.window, bg=BACKGROUND_COLOR)
         button_frame.grid(row=4, column=0, columnspan=4)
         get_button(button_frame, "Close", NEXT_COLOR, self.close_window, 0, 0, 1, (25, 0))
-        self.save_button = get_button(button_frame, "Save", "#4FA9EB", self.save, 0, 1, 1, (25, 0))
+        self.save_button = get_button(button_frame, "Save n Close", "#4FA9EB", self.save, 0, 1, 1, (25, 0))
         self.save_button.grid_forget()
 
         self.update(self.selected)
@@ -67,10 +67,10 @@ class Graph:
         self.gui[0].delete("1.0", "end-1c")
         self.gui[0].insert("end", self.selected[5:], "centered")
         self.gui[0].configure(state='disabled')
-        self.save_button.grid_forget()
+        self.close_window()
 
     def close_window(self):
-        self.change_function(self.gui, self.current_tag)
+        self.change_function(self.gui, self.current_tag, "Tab")
         self.window.destroy()
 
     def update(self, tag):

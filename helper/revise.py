@@ -131,13 +131,27 @@ class Revise:
         frame = Frame(new_window, bg=BACKGROUND_COLOR)
         frame.grid(row=3, column=0, columnspan=4)
 
-        def detect_change(gui, data):
-            new_change = gui[0].get("1.0", "end-1c")
-            gui[0].tag_add("centered", 1.0, "end")
-            if new_change == data:
-                gui[1].grid_forget()
-            else:
-                gui[1].grid(row=0, column=3, columnspan=1)
+        def is_gridded(gui):
+            return len(gui.grid_info()) != 0
+
+        def detect_change(gui, data, event):
+            if event != "Tab" or (event == "Tab" and gui == tag_gui):
+                new_change = gui[0].get("1.0", "end-1c")
+                gui[0].tag_add("centered", 1.0, "end")
+                if new_change == data:
+                    gui[1].grid_forget()
+                else:
+                    gui[1].grid(row=0, column=3, columnspan=1)
+            if is_gridded(prompt_gui[1]) and is_gridded(level_gui[1]) and is_gridded(tag_gui[1]):
+                save_all.grid(row=0, column=3, pady=(25, 0))
+            if event == "Tab":
+                if gui == prompt_gui:
+                    level_gui[0].focus_set()
+                elif gui == level_gui:
+                    graph()
+                else:
+                    if is_gridded(save_all):
+                        save_all.focus_set()
 
         def save_change(gui, itr, key):
             new_change = gui[0].get("1.0", "end-1c").strip()
@@ -147,6 +161,11 @@ class Revise:
             self.words[item][itr] = new_change
             self.parent.data[word_index, key] = new_change if key != "level" else int(new_change)
             self.tree.item(tree_item, text=item, values=self.get_values(item))
+
+        def save_all_changes():
+            for i, entry in enumerate(entries):
+                save_change(guis[i], entry[-1], entry[0].lower())
+            next_window()
 
         def get_input_gui(row: int, label_text: str, box_text: str, index: int):
             gui_frame = Frame(frame, bg=BACKGROUND_COLOR)
@@ -160,7 +179,7 @@ class Revise:
             box.delete("1.0", "end-1c")
             box.insert("end", box_text, "centered")
             button = get_button(gui_frame, f"Save {label_text}", "#BA5CF3", self.query, 0, 3, 1, (0, 10))
-            box.bind("<KeyRelease>", lambda event: detect_change((box, button), box_text))
+            box.bind("<KeyRelease>", lambda event: detect_change((box, button), box_text, event.keysym))
             button.configure(width=200, padx=50, font=("Ariel", 22),
                              command=lambda: save_change((box, button), index, label_text.lower()))
             button.grid_forget()
@@ -180,11 +199,14 @@ class Revise:
                 self.parent.window.focus_set()
 
         entries = [("Prompt", prompt, 1), ("Level", level, 5), ("Tag", tag, 6)]
-        prompt_gui, level_gui, tag_gui = [get_input_gui(i, *entry) for i, entry in enumerate(entries)]
+        guis = [get_input_gui(i, *entry) for i, entry in enumerate(entries)]
+        prompt_gui, level_gui, tag_gui = guis
+        if prompt == "":
+            prompt_gui[0].focus_set()
         graph = Graph(self.new_window, word, tag_gui, detect_change, self.parent.data.tags,
                       self.parent.window, new_window)
         tag_gui[0].configure(state="disabled")
-        tag_gui[0].bind("<Double-1>",
+        tag_gui[0].bind("<Button-1>",
                         lambda event: graph())
 
         # Buttons
@@ -192,3 +214,5 @@ class Revise:
         button_frame.grid(row=4, column=0, columnspan=4)
         get_button(button_frame, "Close", "#4FA9EB", close_window, 0, 1, 1, (25, 0))
         get_button(button_frame, "Next", NEXT_COLOR, next_window, 0, 2, 1, (25, 0))
+        save_all = get_button(button_frame, "Save all and Next", "#BA5CF3", save_all_changes, 0, 3, 1, (25, 0))
+        save_all.grid_forget()
