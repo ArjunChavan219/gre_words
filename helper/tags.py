@@ -63,14 +63,14 @@ class Graph:
         self.update(self.selected)
 
     def save(self):
-        self.gui[0].configure(state='normal')
-        self.gui[0].delete("1.0", "end-1c")
-        self.gui[0].insert("end", self.selected[5:], "centered")
-        self.gui[0].configure(state='disabled')
+        self.gui.configure(state='normal')
+        self.gui.delete("1.0", "end-1c")
+        self.gui.insert("end", self.selected[5:], "centered")
+        self.gui.configure(state='disabled')
         self.close_window()
 
     def close_window(self):
-        self.change_function(self.gui, self.current_tag, "Tab")
+        self.change_function()
         self.window.destroy()
 
     def update(self, tag):
