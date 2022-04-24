@@ -142,8 +142,10 @@ class Revise:
                     gui[1].grid_forget()
                 else:
                     gui[1].grid(row=0, column=3, columnspan=1)
-            if is_gridded(prompt_gui[1]) and is_gridded(level_gui[1]) and is_gridded(tag_gui[1]):
+            if (is_gridded(prompt_gui[1]) + is_gridded(level_gui[1]) + is_gridded(tag_gui[1])) > 0:
                 save_all.grid(row=0, column=3, pady=(25, 0))
+            else:
+                save_all.grid_forget()
             if event == "Tab":
                 if gui == prompt_gui:
                     level_gui[0].focus_set()
