@@ -181,7 +181,8 @@ class Revise:
 
         entries = [("Prompt", prompt, 1), ("Level", level, 5), ("Tag", tag, 6)]
         prompt_gui, level_gui, tag_gui = [get_input_gui(i, *entry) for i, entry in enumerate(entries)]
-        graph = Graph(self.new_window, word, tag_gui, detect_change, self.parent.data.tags, self.parent.window)
+        graph = Graph(self.new_window, word, tag_gui, detect_change, self.parent.data.tags,
+                      self.parent.window, new_window)
         tag_gui[0].configure(state="disabled")
         tag_gui[0].bind("<Double-1>",
                         lambda event: graph())

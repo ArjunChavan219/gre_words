@@ -29,8 +29,9 @@ class Tags:
 
 class Graph:
 
-    def __init__(self, window_function, word, gui, change_function, tags: Tags, main_window):
+    def __init__(self, window_function, word, gui, change_function, tags: Tags, main_window, parent_window):
         self.main_window = main_window
+        self.parent_window = parent_window
         self.w_factor, self.h_factor = 65, 65
         self.x_pad, self.y_pad = 15, 5
 
@@ -108,6 +109,7 @@ class Graph:
                 words = self.tags.get_words(tag[5:])
                 confirm = messagebox.askyesno("Confirm", f"It has the following words:\n{wrap_text(words, 60)}")
                 self.main_window.focus_set()
+                self.parent_window.focus_set()
                 self.window.focus_set()
                 if confirm:
                     self.selected = tag
