@@ -119,6 +119,7 @@ class Graph:
                     self.hover(self.selected_gui, False)
                     if self.selected[5:] != self.current_tag:
                         self.save_button.grid(row=0, column=1, pady=(25, 0))
+                        self.save_button.focus_set()
                     else:
                         self.save_button.grid_forget()
                 return
