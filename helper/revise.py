@@ -140,7 +140,10 @@ class Revise:
                 gui[1].grid(row=0, column=3, columnspan=1)
 
         def save_change(gui, itr, key):
-            new_change = gui[0].get("1.0", "end-1c")
+            new_change = gui[0].get("1.0", "end-1c").strip()
+            gui[0].delete("1.0", "end-1c")
+            gui[0].insert("end", new_change, "centered")
+            gui[1].grid_forget()
             self.words[item][itr] = new_change
             self.parent.data[word_index, key] = new_change if key != "level" else int(new_change)
             self.tree.item(tree_item, text=item, values=self.get_values(item))
