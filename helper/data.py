@@ -18,7 +18,13 @@ class MongoDb:
 
         self.tags: Tags = Tags(
             db["words_tags"].find({}, {"_id": 0})[0],
-            self.data[["word", "tag"]].set_index("word").to_dict()["tag"]
+            self.data[["word", "tag"]]
+                .set_index("word")
+                .to_dict()["tag"],
+            self.data[["word", "tag"]]
+                .groupby("tag")
+                .agg({"word": lambda series: ", ".join(series.sort_values())})
+                .to_dict()["word"]
         )
 
     def get_database(self) -> pd.DataFrame:
