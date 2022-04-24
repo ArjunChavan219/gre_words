@@ -1,16 +1,21 @@
 import numpy as np
 from helper.functions import *
+from tkinter import messagebox
 
 
 class Tags:
 
-    def __init__(self, data, words):
+    def __init__(self, data, words_data, leaves_data):
         self.tree = {}
         self.get_tree({"Tags": data}, "Tags", "Tags")
-        self.words = words
+        self.words = words_data
+        self.leaves = leaves_data
 
     def get_children(self, parent):
         return [child.split(".")[-1] for child in self.tree[parent]]
+
+    def get_words(self, leaf):
+        return self.leaves[leaf]
 
     def get_tree(self, tags, header, root):
         children = tags[root]
@@ -21,13 +26,11 @@ class Tags:
             for child in children:
                 self.get_tree(children, header + "." + child, child)
 
-    def get_leaves(self):
-        return [tag for tag in self.tree if len(self.tree[tag]) == 0]
-
 
 class Graph:
 
-    def __init__(self, window_function, word, gui, change_function, tags: Tags):
+    def __init__(self, window_function, word, gui, change_function, tags: Tags, main_window):
+        self.main_window = main_window
         self.w_factor, self.h_factor = 65, 65
         self.x_pad, self.y_pad = 15, 5
 
@@ -42,8 +45,7 @@ class Graph:
         self.tags = tags
         self.gui = gui
         self.current_tag = self.tags.words[word]
-        self.tag = "Tags." + self.current_tag
-        self.selected = self.tag
+        self.selected = "Tags." + self.current_tag
 
     def __call__(self):
         self.window = self.window_function(("Word Tags", f"Word: {self.word}"))
@@ -57,7 +59,7 @@ class Graph:
         self.save_button = get_button(button_frame, "Save", "#4FA9EB", self.save, 0, 1, 1, (25, 0))
         self.save_button.grid_forget()
 
-        self.update()
+        self.update(self.selected)
 
     def save(self):
         self.gui[0].configure(state='normal')
@@ -70,10 +72,10 @@ class Graph:
         self.change_function(self.gui, self.current_tag)
         self.window.destroy()
 
-    def update(self):
+    def update(self, tag):
         self.stack = ["Tags"]
-        if self.tag != "" and self.tag != "Tags":
-            self.stack = self.tag.split(".")[:-1]
+        if tag != "" and tag != "Tags":
+            self.stack = tag.split(".")[:-1]
         self.children = sorted(self.tags.get_children(".".join(self.stack)), key=lambda a: (-len(a), a))
 
         self.canvas.delete("all")
@@ -100,23 +102,28 @@ class Graph:
 
     def click(self, gui, identifier):
         if identifier[1] != "parent":
-            self.tag = ".".join(self.stack) + "." + self.children[identifier[0]]
-            children = self.tags.get_children(self.tag)
+            tag = ".".join(self.stack) + "." + self.children[identifier[0]]
+            children = self.tags.get_children(tag)
             if len(children) == 0:
-                self.selected = self.tag
-                old_gui = self.selected_gui
-                self.selected_gui = gui
-                self.hover(old_gui, False)
-                self.hover(self.selected_gui, False)
-                if self.selected[5:] != self.current_tag:
-                    self.save_button.grid(row=0, column=1, pady=(25, 0))
-                else:
-                    self.save_button.grid_forget()
+                words = self.tags.get_words(tag[5:])
+                confirm = messagebox.askyesno("Confirm", f"It has the following words:\n{wrap_text(words, 60)}")
+                self.main_window.focus_set()
+                self.window.focus_set()
+                if confirm:
+                    self.selected = tag
+                    old_gui = self.selected_gui
+                    self.selected_gui = gui
+                    self.hover(old_gui, False)
+                    self.hover(self.selected_gui, False)
+                    if self.selected[5:] != self.current_tag:
+                        self.save_button.grid(row=0, column=1, pady=(25, 0))
+                    else:
+                        self.save_button.grid_forget()
                 return
-            self.tag += ".*"
+            tag += ".*"
         else:
-            self.tag = ".".join(self.stack[:identifier[0] + 1]) + ".*"
-        self.update()
+            tag = ".".join(self.stack[:identifier[0] + 1]) + ".*"
+        self.update(tag)
 
     def draw_text(self, x, y, label, anchor, identifier):
         text = self.canvas.create_text(x, y, font="Courier 20", text=label, fill="black", anchor=anchor)
