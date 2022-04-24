@@ -112,91 +112,99 @@ class Revise:
     def get_word(self):
         if len(self.tree.selection()) == 0:
             return
-        tree_item = self.tree.selection()[0]
-        self.tree.selection_remove(tree_item)
-        item = self.tree.item(tree_item, "text")
-        word, prompt, score, test, marked, level, tag = self.get_values(item)
-        word_index = self.parent.data.get_index(word)
-        word_data = self.parent.data[word_index]
-        new_window = self.new_window(("Word Revision", f"Word: {word}"))
+        ReviseTab(self)
+
+
+class ReviseTab:
+
+    def __init__(self, parent: Revise):
+        self.tree_item = parent.tree.selection()[0]
+        parent.tree.selection_remove(self.tree_item)
+        self.item = parent.tree.item(self.tree_item, "text")
+        word, prompt, score, test, marked, level, tag = parent.get_values(self.item)
+        self.word_index = parent.parent.data.get_index(word)
+        word_data = parent.parent.data[self.word_index]
+        self.new_window = parent.new_window(("Word Revision", f"Word: {word}"))
+        self.parent = parent
 
         # Labels and Boxes
-        select_boxes = [get_widgets(1, i, SELECT_COLOR, new_window, 2) for i in range(4)]
+        select_boxes = [get_widgets(1, i, SELECT_COLOR, self.new_window, 2) for i in range(4)]
         for i, (select_widget, col) in enumerate(zip(select_boxes, COLUMNS)):
             select_widget.delete("1.0", "end-1c")
             select_widget.insert("end", word_data[col])
             select_widget.configure(state="disabled")
 
         # Frame
-        frame = Frame(new_window, bg=BACKGROUND_COLOR)
-        frame.grid(row=3, column=0, columnspan=4)
+        self.frame = Frame(self.new_window, bg=BACKGROUND_COLOR)
+        self.frame.grid(row=3, column=0, columnspan=4)
 
-        def detect_change(itr, event):
-            if event != "Tab":
-                texts[itr] = guis[itr].get("1.0", "end-1c")
-                guis[itr].tag_add("centered", 1.0, "end")
-                if texts[itr].strip() != entries[itr][1]:
-                    next_button.configure(text="Save and Next")
-            elif itr != 2:
-                guis[itr].delete("1.0", "end-1c")
-                guis[itr].insert("end", texts[itr], "centered")
-            is_any_changed = sum([texts[i].strip() != entries[i][1] for i in range(3)]) > 0
-            if not is_any_changed:
-                next_button.configure(text="Next")
-            if event == "Tab":
-                if itr == 0:
-                    guis[1].focus_set()
-                elif itr == 1:
-                    graph()
-                else:
-                    if is_any_changed:
-                        next_button.focus_set()
-
-        def get_input_gui(row: int):
-            gui_frame = Frame(frame, bg=BACKGROUND_COLOR)
-            gui_frame.grid(row=row, column=0, columnspan=4, pady=(0, 10))
-            label = Label(gui_frame, text=entries[row][0], bg=SELECT_COLOR, fg="black", font=("Ariel", 20), width=10)
-            label.grid(row=0, column=0, padx=100)
-            box = ScrolledText(gui_frame, height=1, width=60, font=("Ariel", 14), bg="white",
-                               fg="black", wrap=WORD, insertbackground="black")
-            box.grid(row=0, column=1, columnspan=2, padx=(0, 50))
-            box.tag_configure("centered", justify="center")
-            box.delete("1.0", "end-1c")
-            box.insert("end", entries[row][1], "centered")
-            box.bind("<KeyRelease>", lambda event: detect_change(row, event.keysym))
-            return box
-
-        def close_window():
-            new_window.destroy()
-            self.parent.window.focus_set()
-
-        def next_window():
-            if sum([texts[i].strip() != entries[i][1] for i in range(3)]) > 0:
-                for i, entry in enumerate(entries):
-                    key = entry[0].lower()
-                    new_change = guis[i].get("1.0", "end-1c").strip()
-                    guis[i].delete("1.0", "end-1c")
-                    guis[i].insert("end", new_change, "centered")
-                    self.words[item][entry[-1]] = new_change
-                    self.parent.data[word_index, key] = new_change if key != "level" else int(new_change)
-                    self.tree.item(tree_item, text=item, values=self.get_values(item))
-            close_window()
-            next_item = self.tree.next(tree_item)
-            if next_item != "":
-                self.tree.selection_set(next_item)
-                self.get_word()
-
-        entries = [("Prompt", prompt, 1), ("Level", level, 5), ("Tag", tag, 6)]
-        guis, texts = [get_input_gui(i) for i in range(3)], [prompt, str(level), str(tag)]
+        self.entries = [("Prompt", prompt, 1), ("Level", level, 5), ("Tag", tag, 6)]
+        self.guis, self.texts = [self.get_input_gui(i) for i in range(3)], [prompt, str(level), str(tag)]
+        self.is_any_changed = False
         if prompt == "":
-            guis[0].focus_set()
-        graph = Graph(self.new_window, word, guis[2], lambda: detect_change(2, "Tab"),
-                      self.parent.data.tags, self.parent.window, new_window)
-        guis[2].configure(state="disabled")
-        guis[2].bind("<Button-1>", lambda event: graph())
+            self.guis[0].focus_set()
+        self.graph = Graph(parent.new_window, word, self.guis[2], lambda: self.detect_change(2, "Tab"),
+                           parent.parent.data.tags, parent.parent.window, self.new_window)
+        self.guis[2].configure(state="disabled")
+        self.guis[2].bind("<Button-1>", lambda event: self.graph())
 
         # Buttons
-        button_frame = Frame(frame, bg=BACKGROUND_COLOR)
+        button_frame = Frame(self.frame, bg=BACKGROUND_COLOR)
         button_frame.grid(row=4, column=0, columnspan=4)
-        get_button(button_frame, "Close", "#4FA9EB", close_window, 0, 1, 1, (25, 0))
-        next_button = get_button(button_frame, "Next", "#BA5CF3", next_window, 0, 2, 1, (25, 0))
+        get_button(button_frame, "Close", "#4FA9EB", self.close_window, 0, 1, 1, (25, 0))
+        self.next_button = get_button(button_frame, "Next", "#BA5CF3", self.next_window, 0, 2, 1, (25, 0))
+
+    def detect_change(self, itr, event):
+        if event != "Tab":
+            self.texts[itr] = self.guis[itr].get("1.0", "end-1c")
+            self.guis[itr].tag_add("centered", 1.0, "end")
+            if self.texts[itr].strip() != self.entries[itr][1]:
+                self.next_button.configure(text="Save and Next")
+        elif itr != 2:
+            self.guis[itr].delete("1.0", "end-1c")
+            self.guis[itr].insert("end", self.texts[itr], "centered")
+        self.is_any_changed = sum([self.texts[i].strip() != self.entries[i][1] for i in range(3)]) > 0
+        if not self.is_any_changed:
+            self.next_button.configure(text="Next")
+        if event == "Tab":
+            if itr == 0:
+                self.guis[1].focus_set()
+            elif itr == 1:
+                self.graph()
+            else:
+                if self.is_any_changed:
+                    self.next_button.focus_set()
+
+    def get_input_gui(self, row: int):
+        gui_frame = Frame(self.frame, bg=BACKGROUND_COLOR)
+        gui_frame.grid(row=row, column=0, columnspan=4, pady=(0, 10))
+        label = Label(gui_frame, text=self.entries[row][0], bg=SELECT_COLOR, fg="black", font=("Ariel", 20), width=10)
+        label.grid(row=0, column=0, padx=100)
+        box = ScrolledText(gui_frame, height=1, width=60, font=("Ariel", 14), bg="white",
+                           fg="black", wrap=WORD, insertbackground="black")
+        box.grid(row=0, column=1, columnspan=2, padx=(0, 50))
+        box.tag_configure("centered", justify="center")
+        box.delete("1.0", "end-1c")
+        box.insert("end", self.entries[row][1], "centered")
+        box.bind("<KeyRelease>", lambda event: self.detect_change(row, event.keysym))
+        return box
+
+    def close_window(self, ):
+        self.new_window.destroy()
+        self.parent.parent.window.focus_set()
+
+    def next_window(self, ):
+        if self.is_any_changed:
+            for i, entry in enumerate(self.entries):
+                key = entry[0].lower()
+                new_change = self.guis[i].get("1.0", "end-1c").strip()
+                self.guis[i].delete("1.0", "end-1c")
+                self.guis[i].insert("end", new_change, "centered")
+                self.parent.words[self.item][entry[-1]] = new_change
+                self.parent.parent.data[self.word_index, key] = new_change if key != "level" else int(new_change)
+                self.parent.tree.item(self.tree_item, text=self.item, values=self.parent.get_values(self.item))
+        self.close_window()
+        next_item = self.parent.tree.next(self.tree_item)
+        if next_item != "":
+            self.parent.tree.selection_set(next_item)
+            self.parent.get_word()
