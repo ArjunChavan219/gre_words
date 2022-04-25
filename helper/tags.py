@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from helper.functions import *
 from tkinter import messagebox
 
@@ -36,8 +37,8 @@ class Graph:
         self.x_pad, self.y_pad = 15, 5
 
         self.h_nodes, self.width, self.height = None, None, None
-        self.stack, self.children = None, None
-        self.selected_gui = (-1, -1)
+        self.stack, self.children, self.shortcuts = None, None, None
+        self.selected_gui, self.highlighted_gui, self.guis = (-1, -1), (-1, -1), {}
         self.spaces = []
 
         self.word = word
@@ -49,10 +50,11 @@ class Graph:
         self.selected = "Tags." + self.current_tag
 
     def __call__(self):
-        self.window = self.window_function(("Word Tags", f"Word: {self.word}"))
+        self.window: Toplevel = self.window_function(("Word Tags", f"Word: {self.word}"))
         self.window.protocol("WM_DELETE_WINDOW", self.close_window)
         self.canvas = Canvas(self.window, background="#8CF3D4")
         self.canvas.grid(row=2, column=0, columnspan=4)
+        self.window.bind_all("<Key>", lambda event: self.handle_key(event.keysym))
 
         button_frame = Frame(self.window, bg=BACKGROUND_COLOR)
         button_frame.grid(row=4, column=0, columnspan=4)
@@ -70,14 +72,28 @@ class Graph:
         self.close_window()
 
     def close_window(self):
+        self.window.unbind_all("<Key>")
         self.change_function()
         self.window.destroy()
+
+    def get_tag_shortcuts(self):
+        identifier, letter = [], []
+        for i, parent in enumerate(self.stack):
+            identifier.append(self.guis[(i, "parent")])
+            letter.append(parent[0].lower())
+        for i, child in enumerate(self.children):
+            identifier.append(self.guis[(i, "child")])
+            letter.append(child[0].lower())
+
+        return pd.DataFrame({"identifier": identifier, "letter": letter}).groupby("letter").agg(
+            {"identifier": lambda a: list(a)}).to_dict()["identifier"]
 
     def update(self, tag):
         self.stack = ["Tags"]
         if tag != "" and tag != "Tags":
             self.stack = tag.split(".")[:-1]
         self.children = sorted(self.tags.get_children(".".join(self.stack)), key=lambda a: (-len(a), a))
+        self.guis = {}
 
         self.canvas.delete("all")
         self.h_nodes = len(self.stack) + 1.5 + (1 if len(self.children) >= 2 else 0)
@@ -91,9 +107,30 @@ class Graph:
 
         self.display()
 
+    def handle_key(self, key: str):
+        if key == "space":
+            if self.highlighted_gui != (-1, -1):
+                return
+            if str(self.canvas.focus_get()).split(".!")[-1] != "button":
+                identifier = list(self.guis.keys())[list(self.guis.values()).index(self.highlighted_gui)]
+                self.click(self.highlighted_gui, identifier)
+            return
+        if len(key) == 1 and key.isalpha() and key in self.shortcuts:
+            guis: list = self.shortcuts[key]
+            if self.highlighted_gui == (-1, -1) or self.highlighted_gui not in guis:
+                index = 0
+            else:
+                index = (guis.index(self.highlighted_gui) + 1) % len(guis)
+            self.hover(guis[index], True)
+
     def hover(self, gui, enter):
+        h_gui = self.highlighted_gui
+        self.highlighted_gui = (-1, -1)
+        if h_gui != (-1, -1):
+            self.hover(h_gui, False)
         if enter:
             color = ("white", "red")
+            self.highlighted_gui = gui
         elif gui == self.selected_gui:
             color = ("white", "#8800C7")
         else:
@@ -143,6 +180,7 @@ class Graph:
         self.canvas.tag_bind(text, "<Button-1>", func=lambda e: self.click((text, border), identifier))
         self.canvas.tag_bind(border, "<Button-1>", func=lambda e: self.click((text, border), identifier))
 
+        self.guis[identifier] = (text, border)
         return new_box, (text, border)
 
     def draw_line(self, x1, y1, x2, y2, arrow):
@@ -156,6 +194,7 @@ class Graph:
         y_cord2 = self.h_factor*(self.h_nodes-0.75)
         children_cords = [self.draw_text(self.spaces[i], y_cord1 if i % 2 == 0 else y_cord2, child, "w", (i, "child"))
                           for i, child in enumerate(self.children)]
+        self.shortcuts = self.get_tag_shortcuts()
 
         for itr in range(len(parents_cords) - 1):
             self.draw_line(x_cord, parents_cords[itr][0][3], x_cord, parents_cords[itr + 1][0][1], "last")
