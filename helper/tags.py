@@ -109,7 +109,7 @@ class Graph:
 
     def handle_key(self, key: str):
         if key == "space":
-            if self.highlighted_gui != (-1, -1):
+            if self.highlighted_gui == (-1, -1):
                 return
             if str(self.canvas.focus_get()).split(".!")[-1] != "button":
                 identifier = list(self.guis.keys())[list(self.guis.values()).index(self.highlighted_gui)]
@@ -143,8 +143,8 @@ class Graph:
             tag = ".".join(self.stack) + "." + self.children[identifier[0]]
             children = self.tags.get_children(tag)
             if len(children) == 0:
-                words = self.tags.get_words(tag[5:])
-                confirm = messagebox.askyesno("Confirm", f"It has the following words:\n{wrap_text(words, 60)}")
+                words = wrap_text(self.tags.get_words(tag[5:]), 60)
+                confirm = messagebox.askyesno("Confirm", f"It has the following words:\n{words}")
                 self.main_window.focus_set()
                 self.parent_window.focus_set()
                 self.window.focus_set()
