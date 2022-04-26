@@ -73,7 +73,7 @@ class Test:
     def formulate(self):
         length = len(self.parent.data)
         indexes = np.arange(length).reshape(length, 1)
-        test_arr = (self.parent.data.test*2 - self.parent.data.marked).to_numpy().reshape(length, 1)
+        test_arr = (self.parent.data.data.test*2 - self.parent.data.data.marked).to_numpy(dtype=int).reshape(length, 1)
         cat_arr = np.concatenate((indexes, test_arr), axis=1)
         srt_arr = np.sort(cat_arr.view('i8,i8'), order=['f1', 'f0'], axis=0).view(int)
         uv, ind = np.unique(srt_arr[:, 1], return_index=True)
