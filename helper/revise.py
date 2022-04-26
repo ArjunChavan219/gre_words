@@ -31,6 +31,7 @@ class Revise:
         get_button(self.frame, "Query", NEXT_COLOR, self.query, 2, 1, 1, (50, 0))
 
         self.parent.refresh_child(self.frame)
+        place_window(self.parent.window, 1400, 600)
 
     def new_window(self, text):
         new_window = Toplevel(self.frame)
@@ -73,6 +74,7 @@ class Revise:
 
         box.bind("<<ComboboxSelected>>", lambda event: set_value())
         set_value()
+        place_window(new_window, 525, 300)
 
     def statistics(self, old_window):
         new_window = self.new_window(("Word Statistics", "Counts"))
@@ -90,7 +92,7 @@ class Revise:
         [get_table((i, col)) for i, col in enumerate(["level", "test"])]
         get_button(new_window, "Close", NEXT_COLOR, lambda: close(new_window, old_window), 2, 0, 4, (50, 0))
 
-        set_window_position(new_window)
+        place_window(new_window, 650, 450)
 
     def sort(self, col, reverse):
         def get_children(parent):
@@ -164,6 +166,7 @@ class ReviseTab:
         get_button(button_frame, "Close", "#4FA9EB", lambda: close(self.new_window, self.parent.parent.window),
                    0, 1, 1, (25, 0))
         self.next_button = get_button(button_frame, "Next", "#BA5CF3", self.next_window, 0, 2, 1, (25, 0))
+        place_window(self.new_window, 1500, 560)
 
     def detect_change(self, itr, event):
         if event != "Tab":

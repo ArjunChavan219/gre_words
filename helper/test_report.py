@@ -17,6 +17,7 @@ class TestReport:
         self.set_report()
 
         self.parent.parent.refresh_child(self.frame)
+        place_window(self.parent.parent.window, 1275, 900)
 
     def sort(self, col, reverse):
         def get_children(parent):

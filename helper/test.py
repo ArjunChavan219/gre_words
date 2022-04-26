@@ -9,6 +9,7 @@ class Test:
 
     def __init__(self, parent: Main):
         parent.init_window()
+        self.parent = parent
         self.test_type = messagebox.askyesno("Test Type", "Questions should be definitions?")
         self.hide = messagebox.askyesno("Test Type", "Options should be hidden?")
         self.check_hide = False
@@ -64,6 +65,7 @@ class Test:
             self.radio_buttons[i].grid(row=(i % 2) + 1, column=(i // 2) + 1, sticky="e")
         self.check_hide = False
         self.check_button.configure(text="Check")
+        place_window(self.parent.window, 1350, 450)
 
     def get_radio_buttons(self, i):
         radio_button = Radiobutton(self.frame, text="", variable=self.option_choice, value=i, width=50, height=3,
@@ -103,11 +105,18 @@ class Test:
         self.options_order = np.arange(4)
         np.random.shuffle(self.options_order)
         for itr, option_itr in enumerate(self.options_order):
-            self.radio_buttons[itr].configure(text=wrap_text(self.options[self.itr][option_itr], 75))
+            self.radio_buttons[itr].configure(text=wrap_text(self.options[self.itr][option_itr], 60))
             if self.hide:
                 self.radio_buttons[itr].grid_forget()
                 self.check_hide = True
                 self.check_button.configure(text="Check")
+        if self.check_hide:
+            if self.test_type:
+                place_window(self.parent.window, 800, 300)
+            else:
+                place_window(self.parent.window, 550, 250)
+        else:
+            place_window(self.parent.window, 1350, 450)
 
     def check(self):
         if self.check_hide:

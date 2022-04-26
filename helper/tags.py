@@ -102,8 +102,9 @@ class Graph:
         self.spaces[1:] = self.spaces[:-1]
         self.spaces[0] = 0
         self.spaces += self.w_factor
-        self.height = self.h_factor * self.h_nodes
+        self.height = int(self.h_factor * self.h_nodes)
         self.canvas.configure(width=self.width, height=self.height)
+        place_window(self.window, max(550, 56+self.width), self.height+249)
 
         self.display()
 
