@@ -4,6 +4,11 @@ from helper.tags import Graph
 from tkinter.simpledialog import askstring
 
 
+def close(old_window, new_window):
+    old_window.destroy()
+    new_window.focus_set()
+
+
 class Revise:
 
     def __init__(self, parent: Main):
@@ -51,7 +56,8 @@ class Revise:
         textbox.grid(row=1, column=2, columnspan=2)
         textbox.tag_configure("centered", justify="center")
 
-        get_button(new_window, "Statistics", NEXT_COLOR, self.statistics, 2, 0, 4, (50, 0))
+        get_button(new_window, "Statistics", NEXT_COLOR, lambda: self.statistics(new_window), 2, 0, 2, (50, 0))
+        get_button(new_window, "Close", NEXT_COLOR, lambda: close(new_window, self.parent.window), 2, 2, 2, (50, 0))
 
         def set_value():
             value: str = box.get()
@@ -68,7 +74,7 @@ class Revise:
         box.bind("<<ComboboxSelected>>", lambda event: set_value())
         set_value()
 
-    def statistics(self):
+    def statistics(self, old_window):
         new_window = self.new_window(("Word Statistics", "Counts"))
 
         def get_table(col):
@@ -79,8 +85,12 @@ class Revise:
             for itr, count in enumerate(counts):
                 tree.insert("", 'end', text=itr, values=count)
             alternate(tree)
+            tree.configure(height=5)
 
         [get_table((i, col)) for i, col in enumerate(["level", "test"])]
+        get_button(new_window, "Close", NEXT_COLOR, lambda: close(new_window, old_window), 2, 0, 4, (50, 0))
+
+        set_window_position(new_window)
 
     def sort(self, col, reverse):
         def get_children(parent):
@@ -151,7 +161,8 @@ class ReviseTab:
         # Buttons
         button_frame = Frame(self.frame, bg=BACKGROUND_COLOR)
         button_frame.grid(row=4, column=0, columnspan=4)
-        get_button(button_frame, "Close", "#4FA9EB", self.close_window, 0, 1, 1, (25, 0))
+        get_button(button_frame, "Close", "#4FA9EB", lambda: close(self.new_window, self.parent.parent.window),
+                   0, 1, 1, (25, 0))
         self.next_button = get_button(button_frame, "Next", "#BA5CF3", self.next_window, 0, 2, 1, (25, 0))
 
     def detect_change(self, itr, event):
@@ -189,11 +200,7 @@ class ReviseTab:
         box.bind("<KeyRelease>", lambda event: self.detect_change(row, event.keysym))
         return box
 
-    def close_window(self, ):
-        self.new_window.destroy()
-        self.parent.parent.window.focus_set()
-
-    def next_window(self, ):
+    def next_window(self):
         if self.is_any_changed:
             for i, entry in enumerate(self.entries):
                 key = entry[0].lower()
@@ -203,7 +210,7 @@ class ReviseTab:
                 self.parent.words[self.item][entry[-1]] = new_change
                 self.parent.parent.data[self.word_index, key] = new_change if key != "level" else int(new_change)
                 self.parent.tree.item(self.tree_item, text=self.item, values=self.parent.get_values(self.item))
-        self.close_window()
+        close(self.new_window, self.parent.parent.window)
         next_item = self.parent.tree.next(self.tree_item)
         if next_item != "":
             self.parent.tree.selection_set(next_item)
