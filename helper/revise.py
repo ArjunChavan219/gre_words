@@ -34,7 +34,7 @@ class Revise:
 
     def new_window(self, text):
         new_window = Toplevel(self.frame)
-        new_window.config(padx=50, pady=50, bg=BACKGROUND_COLOR)
+        new_window.config(padx=25, pady=50, bg=BACKGROUND_COLOR)
         new_window.title(text[0])
 
         # Word Header
