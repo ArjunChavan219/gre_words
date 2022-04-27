@@ -88,6 +88,7 @@ class QuickTest:
         # Init functions
         self.get_word()
         self.parent.refresh_child(self.frame)
+        self.parent.window.focus_set()
 
     def get_radio_buttons(self, i):
         radio_button = Radiobutton(self.option_frame, text="", variable=self.option_choice, value=i, width=50, height=3,
@@ -114,7 +115,10 @@ class QuickTest:
         self.button_frame.grid_forget()
         self.check_hide = True
         self.check_next = True
-        place_window(self.parent.window, 550, 365)
+        if self.test_type:
+            place_window(self.parent.window, 800, 340)
+        else:
+            place_window(self.parent.window, 550, 365)
 
     def get_word(self):
         self.hide()
@@ -132,7 +136,10 @@ class QuickTest:
             self.option_frame.grid(row=2, column=0, columnspan=self.column_span, pady=(30, 0))
             self.button_frame.grid(row=4, column=0, columnspan=self.column_span, pady=(30, 0))
             self.check_hide = False
-            place_window(self.parent.window, 1365, 555)
+            if self.test_type:
+                place_window(self.parent.window, 800, 520)
+            else:
+                place_window(self.parent.window, 1365, 555)
         elif self.check_next:
             self.toggle_option(True)
             self.check_next = False
