@@ -172,13 +172,15 @@ class ReviseTab:
         if event != "Tab":
             self.texts[itr] = self.guis[itr].get("1.0", "end-1c")
             self.guis[itr].tag_add("centered", 1.0, "end")
-            if self.texts[itr].strip() != self.entries[itr][1]:
-                self.next_button.configure(text="Save and Next")
         elif itr != 2:
             self.guis[itr].delete("1.0", "end-1c")
             self.guis[itr].insert("end", self.texts[itr], "centered")
+        else:
+            self.texts[itr] = self.guis[itr].get("1.0", "end-1c")
         self.is_any_changed = sum([self.texts[i].strip() != self.entries[i][1] for i in range(3)]) > 0
-        if not self.is_any_changed:
+        if self.is_any_changed:
+            self.next_button.configure(text="Save and Next")
+        else:
             self.next_button.configure(text="Next")
         if event == "Tab":
             if itr == 0:
