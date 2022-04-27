@@ -79,7 +79,7 @@ class MongoDb:
             "test": 0,
             "marked": False,
             "level": 2,
-            "tags": ""
+            "tag": ""
         }
         self.data.loc[len(self.data)] = [*data.values(), *extra_data.values()]
         for i, col in enumerate(COLUMNS):
