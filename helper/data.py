@@ -103,3 +103,26 @@ class MongoDb:
     def get_tag_words(self, tag):
         # list of all words with that tag
         return ", ".join(np.sort(self.data[self.data.tag == tag].word.values))
+
+    def save_tags(self):
+        with open("Words.md") as file:
+            lines = [line for line in file.readlines() if line.startswith("#")]
+
+        words_entry = ""
+        stack = []
+
+        for line in lines:
+            level = line.index(" ")
+            if level <= len(stack):
+                tag_df = self.data[self.data.tag == ".".join(stack)][["word", "definitions"]].sort_values("word")
+                words_entry += "\n".join(tag_df.word + " -> " + tag_df.definitions.str.replace("\n", "; ")) + "\n\n"
+            while level <= len(stack):
+                stack.pop()
+            stack.append(line[level + 1:-1])
+            words_entry += line
+
+        tag_df = self.data[self.data.tag == ".".join(stack)][["word", "definitions"]].sort_values("word")
+        words_entry += "\n".join(tag_df.word + " -> " + tag_df.definitions.str.replace("\n", "; ")) + "\n\n"
+
+        with open("Words_2.md", "w") as file:
+            file.write(words_entry)

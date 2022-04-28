@@ -156,7 +156,7 @@ class ReviseTab:
         if prompt == "":
             self.guis[0].focus_set()
         self.graph = Graph(parent.new_window, word, self.guis[2], lambda: self.detect_change(2, "Tab"),
-                           parent.parent.data.tags, parent.parent.window, self.new_window)
+                           parent.parent.data, parent.parent.window, self.new_window)
         self.guis[2].configure(state="disabled")
         self.guis[2].bind("<Button-1>", lambda event: self.graph())
 
@@ -206,15 +206,17 @@ class ReviseTab:
         return box
 
     def next_window(self):
-        if self.is_any_changed:
-            for i, entry in enumerate(self.entries):
+        for i, entry in enumerate(self.entries):
+            new_change = self.guis[i].get("1.0", "end-1c").strip()
+            if new_change != self.entries[i][1]:
                 key = entry[0].lower()
-                new_change = self.guis[i].get("1.0", "end-1c").strip()
                 self.guis[i].delete("1.0", "end-1c")
                 self.guis[i].insert("end", new_change, "centered")
                 self.parent.words[self.item][entry[-1]] = new_change
                 self.parent.parent.data[self.word_index, key] = new_change if key != "level" else int(new_change)
                 self.parent.tree.item(self.tree_item, text=self.item, values=self.parent.get_values(self.item))
+                if i == 2:
+                    self.parent.parent.data.tag_change = True
         close(self.new_window, self.parent.parent.window)
         next_item = self.parent.tree.next(self.tree_item)
         if next_item != "":
