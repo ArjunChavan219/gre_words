@@ -4,33 +4,9 @@ from helper.functions import *
 from tkinter import messagebox
 
 
-class Tags:
-
-    def __init__(self, data, words_data, leaves_data):
-        self.tree = {}
-        self.get_tree({"Tags": data}, "Tags", "Tags")
-        self.words = words_data
-        self.leaves = leaves_data
-
-    def get_children(self, parent):
-        return [child.split(".")[-1] for child in self.tree[parent]]
-
-    def get_words(self, leaf):
-        return self.leaves[leaf]
-
-    def get_tree(self, tags, header, root):
-        children = tags[root]
-        if children is None:
-            self.tree[header] = []
-        else:
-            self.tree[header] = [header + "." + key for key in children]
-            for child in children:
-                self.get_tree(children, header + "." + child, child)
-
-
 class Graph:
 
-    def __init__(self, window_function, word, gui, change_function, tags: Tags, main_window, parent_window):
+    def __init__(self, window_function, word, gui, change_function, tags, main_window, parent_window):
         self.main_window = main_window
         self.parent_window = parent_window
         self.w_factor, self.h_factor = 65, 65
@@ -46,7 +22,7 @@ class Graph:
         self.change_function = change_function
         self.tags = tags
         self.gui = gui
-        self.current_tag = self.tags.words[word]
+        self.current_tag = self.tags.get_tag(word)
         self.selected = "Tags." + self.current_tag
 
     def __call__(self):
@@ -92,7 +68,7 @@ class Graph:
         self.stack = ["Tags"]
         if tag != "" and tag != "Tags":
             self.stack = tag.split(".")[:-1]
-        self.children = sorted(self.tags.get_children(".".join(self.stack)), key=lambda a: (-len(a), a))
+        self.children = sorted(self.tags.get_tag_children(".".join(self.stack)), key=lambda a: (-len(a), a))
         self.guis = {}
 
         self.canvas.delete("all")
@@ -142,9 +118,9 @@ class Graph:
     def click(self, gui, identifier):
         if identifier[1] != "parent":
             tag = ".".join(self.stack) + "." + self.children[identifier[0]]
-            children = self.tags.get_children(tag)
+            children = self.tags.get_tag_children(tag)
             if len(children) == 0:
-                words = wrap_text(self.tags.get_words(tag[5:]), 60)
+                words = wrap_text(self.tags.get_tag_words(tag[5:]), 60)
                 confirm = messagebox.askyesno("Confirm", f"It has the following words:\n{words}")
                 self.main_window.focus_set()
                 self.parent_window.focus_set()

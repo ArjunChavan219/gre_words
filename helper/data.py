@@ -1,7 +1,7 @@
 import pymongo
+import numpy as np
 import pandas as pd
 from helper.constants import COLUMNS
-from helper.tags import Tags
 
 
 class MongoDb:
@@ -16,16 +16,9 @@ class MongoDb:
         self.data_col = db["words_first"]
         self.data: pd.DataFrame = self.get_database()
 
-        self.tags: Tags = Tags(
-            db["words_tags"].find({}, {"_id": 0})[0],
-            self.data[["word", "tag"]]
-                .set_index("word")
-                .to_dict()["tag"],
-            self.data[["word", "tag"]]
-                .groupby("tag")
-                .agg({"word": lambda series: ", ".join(series.sort_values())})
-                .to_dict()["word"]
-        )
+        self.tree = {}
+        self.tag_change = False
+        self.get_tag_tree({"Tags": db["words_tags"].find({}, {"_id": 0})[0]}, "Tags", "Tags")
 
     def get_database(self) -> pd.DataFrame:
         df = pd.DataFrame(self.col.find({}, {"_id": 0}))
@@ -89,3 +82,24 @@ class MongoDb:
             {"word": data["word"]},
             {"$set": {"learnt": True}}
         )
+
+    def get_tag(self, word):
+        # get tag for the respective word
+        return self.data[self.data.word == word].tag.values[0]
+
+    def get_tag_tree(self, tags, header, root):
+        children = tags[root]
+        if children is None:
+            self.tree[header] = []
+        else:
+            self.tree[header] = [header + "." + key for key in children]
+            for child in children:
+                self.get_tag_tree(children, header + "." + child, child)
+
+    def get_tag_children(self, parent):
+        # children of that particular tag
+        return [child.split(".")[-1] for child in self.tree[parent]]
+
+    def get_tag_words(self, tag):
+        # list of all words with that tag
+        return ", ".join(np.sort(self.data[self.data.tag == tag].word.values))
