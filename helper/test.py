@@ -103,7 +103,10 @@ class Test:
         question = current_word_data["definitions" if self.test_type else "word"]
         self.canvas.itemconfig(self.canvas_title, text=f"Question {self.itr+1}: {wrap_text(question, 50)}")
         self.options_order = np.arange(4)
-        np.random.shuffle(self.options_order)
+        if self.hide:
+            self.options_order = np.array([1, 2, 0, 3])
+        else:
+            np.random.shuffle(self.options_order)
         for itr, option_itr in enumerate(self.options_order):
             self.radio_buttons[itr].configure(text=wrap_text(self.options[self.itr][option_itr], 60))
             if self.hide:
