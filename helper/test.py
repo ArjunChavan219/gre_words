@@ -9,6 +9,7 @@ class Test:
 
     def __init__(self, parent: Main):
         parent.init_window()
+        self.parent = parent
         self.test_type = messagebox.askyesno("Test Type", "Questions should be definitions?")
         self.hide = messagebox.askyesno("Test Type", "Options should be hidden?")
         self.check_hide = False
@@ -64,6 +65,7 @@ class Test:
             self.radio_buttons[i].grid(row=(i % 2) + 1, column=(i // 2) + 1, sticky="e")
         self.check_hide = False
         self.check_button.configure(text="Check")
+        place_window(self.parent.window, 1350, 450)
 
     def get_radio_buttons(self, i):
         radio_button = Radiobutton(self.frame, text="", variable=self.option_choice, value=i, width=50, height=3,
@@ -73,7 +75,7 @@ class Test:
     def formulate(self):
         length = len(self.parent.data)
         indexes = np.arange(length).reshape(length, 1)
-        test_arr = (self.parent.data.test*2 - self.parent.data.marked).to_numpy().reshape(length, 1)
+        test_arr = (self.parent.data.data.test*2 - self.parent.data.data.marked).to_numpy(dtype=int).reshape(length, 1)
         cat_arr = np.concatenate((indexes, test_arr), axis=1)
         srt_arr = np.sort(cat_arr.view('i8,i8'), order=['f1', 'f0'], axis=0).view(int)
         uv, ind = np.unique(srt_arr[:, 1], return_index=True)
@@ -101,13 +103,23 @@ class Test:
         question = current_word_data["definitions" if self.test_type else "word"]
         self.canvas.itemconfig(self.canvas_title, text=f"Question {self.itr+1}: {wrap_text(question, 50)}")
         self.options_order = np.arange(4)
-        np.random.shuffle(self.options_order)
+        if self.hide:
+            self.options_order = np.array([1, 2, 0, 3])
+        else:
+            np.random.shuffle(self.options_order)
         for itr, option_itr in enumerate(self.options_order):
-            self.radio_buttons[itr].configure(text=wrap_text(self.options[self.itr][option_itr], 75))
+            self.radio_buttons[itr].configure(text=wrap_text(self.options[self.itr][option_itr], 60))
             if self.hide:
                 self.radio_buttons[itr].grid_forget()
                 self.check_hide = True
                 self.check_button.configure(text="Check")
+        if self.check_hide:
+            if self.test_type:
+                place_window(self.parent.window, 800, 300)
+            else:
+                place_window(self.parent.window, 550, 250)
+        else:
+            place_window(self.parent.window, 1350, 450)
 
     def check(self):
         if self.check_hide:

@@ -28,6 +28,7 @@ class Main:
     def init_window(self):
         self.window.title("GRE Words")
         self.refresh_child(self.frame)
+        place_window(self.window, 800, 200)
 
     def init_frames(self, titles, *args):
         self.window.title(f"GRE {titles[0]} Card")

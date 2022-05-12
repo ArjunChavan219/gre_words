@@ -61,6 +61,8 @@ class QuickTest:
         self.option_choice = IntVar()
         self.options_order = np.array([])
         self.radio_buttons = [self.get_radio_buttons(itr) for itr in range(self.num_options)]
+        for i in range(self.num_options):
+            self.radio_buttons[i].grid(row=(i % 2) + 1, column=(i // 2) + 1, sticky="e")
 
         # Buttons
         self.show_button = get_button(self.frame, "Show", NEXT_COLOR, self.show, 3, 1, 1, (30, 0))
@@ -69,23 +71,24 @@ class QuickTest:
         self.dec_button = get_button(self.button_frame, "Decrement", "#ffa500", lambda: self.next(-1), 0, 0, 1, (0, 0))
         self.keep_button = get_button(self.button_frame, "Keep", NEXT_COLOR, lambda: self.next(0), 0, 1, 1, (0, 0))
         self.inc_button = get_button(self.button_frame, "Increment", "#ffa500", lambda: self.next(1), 0, 2, 1, (0, 0))
+        if self.level == 1:
+            self.dec_button.grid_forget()
+        elif self.level == 5:
+            self.inc_button.grid_forget()
 
         # Grids
-        if 2 < self.level < 5:
-            column_span = 3
-        else:
-            column_span = 4
-
-        self.canvas.grid(row=0, column=0, columnspan=column_span, pady=(0, 30))
-        self.label.grid(row=1, column=0, columnspan=column_span, pady=(0, 30))
-        self.option_frame.grid(row=2, column=0, columnspan=column_span, pady=(30, 0))
-        self.show_button.grid(row=3, column=0, columnspan=column_span, pady=(30, 0))
-        self.button_frame.grid(row=4, column=0, columnspan=column_span, pady=(30, 0))
+        self.column_span = 3 if 2 < self.level < 5 else 4
+        self.canvas.grid(row=0, column=0, columnspan=self.column_span, pady=(0, 30))
+        self.label.grid(row=1, column=0, columnspan=self.column_span, pady=(0, 30))
+        self.show_button.grid(row=3, column=0, columnspan=self.column_span, pady=(30, 0))
+        self.option_frame.grid(row=2, column=0, columnspan=self.column_span, pady=(30, 0))
+        self.button_frame.grid(row=4, column=0, columnspan=self.column_span, pady=(30, 0))
 
         self.frame.bind_all("<KeyRelease>", self.key_press)
         # Init functions
         self.get_word()
         self.parent.refresh_child(self.frame)
+        self.parent.window.focus_set()
 
     def get_radio_buttons(self, i):
         radio_button = Radiobutton(self.option_frame, text="", variable=self.option_choice, value=i, width=50, height=3,
@@ -108,13 +111,14 @@ class QuickTest:
             self.options.append(options)
 
     def hide(self):
-        self.dec_button.grid_forget()
-        self.keep_button.grid_forget()
-        self.inc_button.grid_forget()
-        for itr in range(self.num_options):
-            self.radio_buttons[itr].grid_forget()
+        self.option_frame.grid_forget()
+        self.button_frame.grid_forget()
         self.check_hide = True
         self.check_next = True
+        if self.test_type:
+            place_window(self.parent.window, 800, 340)
+        else:
+            place_window(self.parent.window, 550, 365)
 
     def get_word(self):
         self.hide()
@@ -129,13 +133,13 @@ class QuickTest:
 
     def show(self):
         if self.check_hide:
-            for i in range(self.num_options):
-                self.radio_buttons[i].grid(row=(i % 2) + 1, column=(i // 2) + 1, sticky="e")
-            self.dec_button.grid(row=0, column=0)
-            self.keep_button.grid(row=0, column=1)
-            if self.level != 5:
-                self.inc_button.grid(row=0, column=2)
+            self.option_frame.grid(row=2, column=0, columnspan=self.column_span, pady=(30, 0))
+            self.button_frame.grid(row=4, column=0, columnspan=self.column_span, pady=(30, 0))
             self.check_hide = False
+            if self.test_type:
+                place_window(self.parent.window, 800, 520)
+            else:
+                place_window(self.parent.window, 1365, 555)
         elif self.check_next:
             self.toggle_option(True)
             self.check_next = False

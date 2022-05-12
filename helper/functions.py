@@ -6,6 +6,14 @@ from tkinter.scrolledtext import ScrolledText
 from tkmacosx import Button
 
 
+def place_window(window, width, height):
+    screen_width = window.winfo_screenwidth()
+    screen_height = window.winfo_screenheight()
+    x = (screen_width - width) // 2
+    y = (screen_height - height) // 4
+    window.geometry(f"{min(screen_width, width)}x{min(screen_height, height)}+{max(0, x)}+{max(0, y)}")
+
+
 def get_widgets(row, col, color, parent, scale):
     text, box_type = LABELS[col]
     label = Label(parent, text=text, bg=color, fg="black", font=("Ariel", 20), width=10)

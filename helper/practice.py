@@ -57,6 +57,7 @@ class Practice:
                 elif col == "ants":
                     os.system(f"open \"\"https://www.thesaurus.com/browse/{word}")
         self.parent.refresh_child(self.frame)
+        place_window(self.parent.window, 1500, 800)
 
     def save_word(self):
 
