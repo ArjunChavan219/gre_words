@@ -9,29 +9,41 @@ class QuickTest:
 
     def __init__(self, parent: Main):
         parent.init_window()
+        self.ranged = messagebox.askyesno("Test Type", "Words should be ranged?")
         try:
-            level = int(askstring("Test Specs", "Enter level of words:"))
-            if 0 < level < 6:
-                parent.frame.grid_forget()
+            if self.ranged:
+                start, end = askstring("Test Specs", "Enter range of words:").split(":")
+                start, end = int(start), int(end)
+                if start < end:
+                    parent.frame.grid_forget()
+                    self.level = 3
+                    self.range = np.arange(start, end)
+                else:
+                    messagebox.showerror("Error", "Invalid range.")
+                    return
             else:
-                messagebox.showerror("Error", "Enter number in the range 1-5.")
-                return
+                self.level = int(askstring("Test Specs", "Enter level of words:"))
+                if 0 < self.level < 6:
+                    parent.frame.grid_forget()
+                else:
+                    messagebox.showerror("Error", "Enter number in the range 1-5.")
+                    return
         except (TypeError, ValueError):
             messagebox.showerror("Error", "Enter a valid number.")
+            return
+        except AttributeError:
+            messagebox.showerror("Error", "Enter a valid range.")
             return
 
         self.num_options = 4
         self.test_type = False
-        if level > 2:
+        if self.level > 1:
             self.test_type = messagebox.askyesno("Test Type", "Questions should be definitions?")
             self.num_options = 1
-        elif level == 3:
-            self.test_type = True
 
         # Initialize MongoDB
         # self.col = parent.db["words_last_new"]
         self.parent = parent
-        self.level = level
         self.words = []
         self.word_indices = []
         self.options = []
@@ -71,13 +83,17 @@ class QuickTest:
         self.dec_button = get_button(self.button_frame, "Decrement", "#ffa500", lambda: self.next(-1), 0, 0, 1, (0, 0))
         self.keep_button = get_button(self.button_frame, "Keep", NEXT_COLOR, lambda: self.next(0), 0, 1, 1, (0, 0))
         self.inc_button = get_button(self.button_frame, "Increment", "#ffa500", lambda: self.next(1), 0, 2, 1, (0, 0))
-        if self.level == 1:
+        if self.ranged:
+            self.dec_button.grid_forget()
+            self.inc_button.grid_forget()
+            self.keep_button.configure(text="Next")
+        elif self.level == 1:
             self.dec_button.grid_forget()
         elif self.level == 5:
             self.inc_button.grid_forget()
 
         # Grids
-        self.column_span = 3 if 2 < self.level < 5 else 4
+        self.column_span = 3 if 1 < self.level < 5 else 4
         self.canvas.grid(row=0, column=0, columnspan=self.column_span, pady=(0, 30))
         self.label.grid(row=1, column=0, columnspan=self.column_span, pady=(0, 30))
         self.show_button.grid(row=3, column=0, columnspan=self.column_span, pady=(30, 0))
@@ -98,7 +114,7 @@ class QuickTest:
     def formulate(self):
         length = len(self.parent.data)
         indexes = np.arange(length).reshape(length, 1)
-        self.word_indices = self.parent.data.get_level_indices(self.level)
+        self.word_indices = self.range if self.ranged else self.parent.data.get_level_indices(self.level)
         self.total = len(self.word_indices)
         np.random.shuffle(self.word_indices)
         for index in self.word_indices:
