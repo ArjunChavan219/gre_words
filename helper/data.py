@@ -71,7 +71,7 @@ class MongoDb:
             "score": 0,
             "test": 0,
             "marked": False,
-            "level": 2,
+            "level": 3,
             "tag": ""
         }
         self.data.loc[len(self.data)] = [*data.values(), *extra_data.values()]
