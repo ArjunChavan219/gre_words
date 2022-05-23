@@ -81,6 +81,7 @@ class Test:
         uv, ind = np.unique(srt_arr[:, 1], return_index=True)
         spt_arr = np.split(srt_arr[:, 0], ind[1:])
         self.word_indices = np.concatenate([np.random.permutation(seq) for seq in spt_arr])[:self.words_num]
+        np.random.shuffle(self.word_indices)
 
         for index in self.word_indices:
             word_data = self.parent.data[index]
