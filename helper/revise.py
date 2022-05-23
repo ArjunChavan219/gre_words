@@ -177,7 +177,7 @@ class ReviseTab:
             self.guis[itr].insert("end", self.texts[itr], "centered")
         else:
             self.texts[itr] = self.guis[itr].get("1.0", "end-1c")
-        self.is_any_changed = sum([self.texts[i].strip() != self.entries[i][1] for i in range(3)]) > 0
+        self.is_any_changed = sum([self.texts[i].strip() != str(self.entries[i][1]) for i in range(3)]) > 0
         if self.is_any_changed:
             self.next_button.configure(text="Save and Next")
         else:
