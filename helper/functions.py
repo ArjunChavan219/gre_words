@@ -30,12 +30,12 @@ def get_button(frame, text, color, function, row, col, span, pad):
     return button
 
 
-def get_tree(frame, widths, texts, function):
+def get_tree(frame, widths, texts, function, tid):
     style = ttk.Style(frame)
     style.theme_use("aqua")
-    style.configure("Treeview", background="white", foreground="black", font=("Ariel", 16), rowheight=30)
-    style.configure("Treeview.Heading", foreground="white", font=("Ariel", 20), rowheight=60)
-    tree = ttk.Treeview(frame, selectmode='browse')
+    style.configure(f"Custom{tid}.Treeview", background="white", foreground="black", font=("Ariel", 16), rowheight=30)
+    style.configure(f"Custom{tid}.Treeview.Heading", foreground="white", font=("Ariel", 20), rowheight=60)
+    tree = ttk.Treeview(frame, selectmode='browse', style=f"Custom{tid}.Treeview")
     tree.grid(row=1, column=0, columnspan=4, sticky="news")
     vsb = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
     vsb.grid(row=1, column=3, sticky="nse")

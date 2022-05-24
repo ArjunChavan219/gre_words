@@ -21,7 +21,7 @@ class Revise:
 
         # TreeView
         self.tree, self.style = get_tree(self.frame, (150, 600, 150, 150, 150, 150),
-                                         ("Word", "Prompt", "Score", "Tests", "Marked", "Level"), self.sort)
+                                         ("Word", "Prompt", "Score", "Tests", "Marked", "Level"), self.sort, 0)
         for itr in range(len(self.words)):
             self.tree.insert("", 'end', text=itr, values=(self.get_values(itr)))
         alternate(self.tree)
@@ -82,7 +82,7 @@ class Revise:
         def get_table(col):
             frame = Frame(new_window, bg=BACKGROUND_COLOR)
             frame.grid(row=1, column=col[0])
-            tree, style = get_tree(frame, (150, 150), (col[1].title(), "Counts"), None)
+            tree, style = get_tree(frame, (150, 150), (col[1].title(), "Counts"), None, 1)
             counts = self.parent.data.get_counts(col[1])
             for itr, count in enumerate(counts):
                 tree.insert("", 'end', text=itr, values=count)

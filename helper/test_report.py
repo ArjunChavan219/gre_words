@@ -12,8 +12,8 @@ class TestReport:
         # TreeView
         sizes = (600, 60, 200, 200, 150) if self.parent.test_type else (150, 60, 600, 600, 150)
         self.tree, style = get_tree(self.frame, sizes, ("Word", "Score", "Your Answer",
-                                                        "Correct Answer", "Marked"), self.sort)
-        style.configure("Treeview", rowheight=60)
+                                                        "Correct Answer", "Marked"), self.sort, 2)
+        style.configure("Custom2.Treeview", rowheight=60)
         self.set_report()
 
         self.parent.parent.refresh_child(self.frame)
