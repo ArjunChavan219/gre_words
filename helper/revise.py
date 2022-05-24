@@ -25,7 +25,7 @@ class Revise:
         for itr in range(len(self.words)):
             self.tree.insert("", 'end', text=itr, values=(self.get_values(itr)))
         alternate(self.tree)
-        self.tree.bind("<Double-1>", lambda event: self.get_word())
+        self.tree.bind("<Double-1>", lambda event: self.get_word(self.tree, self.get_values))
 
         # Query Button
         get_button(self.frame, "Query", NEXT_COLOR, self.query, 2, 1, 1, (50, 0))
@@ -122,8 +122,8 @@ class Revise:
         final_score = "Not done" if test == 0 else f"{round(score / test * 100, 2)}%"
         return word, prompt, final_score, test, "❌" if marked else "", level, tag
 
-    def get_word(self):
-        if len(self.tree.selection()) == 0:
+    def get_word(self, tree, get_values):
+        if len(tree.selection()) == 0:
             return
         ReviseTab(self, tree, get_values)
 
@@ -134,14 +134,16 @@ class Revise:
 
 class ReviseTab:
 
-    def __init__(self, parent: Revise):
-        self.tree_item = parent.tree.selection()[0]
-        parent.tree.selection_remove(self.tree_item)
-        self.item = parent.tree.item(self.tree_item, "text")
-        word, prompt, score, test, marked, level, tag = parent.get_values(self.item)
-        self.word_index = parent.parent.data.get_index(word)
-        word_data = parent.parent.data[self.word_index]
-        self.new_window = parent.new_window(("Word Revision", f"Word: {word}"))
+    def __init__(self, parent: Revise, tree, get_values):
+        self.tree = tree
+        self.get_values = get_values
+        self.tree_item = tree.selection()[0]
+        self.tree.selection_remove(self.tree_item)
+        self.item = tree.item(self.tree_item, "text")
+        word = self.get_values(self.item)[0]
+        self.word_index, word_data = parent.parent.data.get_word_data(word)
+        prompt, level, tag = word_data["prompt"], word_data["level"], word_data["tag"]
+        self.new_window = parent.new_window(("Word Revision", f"Word: {word}"))[0]
         self.parent = parent
 
         # Labels and Boxes
@@ -219,11 +221,11 @@ class ReviseTab:
                 self.guis[i].insert("end", new_change, "centered")
                 self.parent.words[self.item][entry[-1]] = new_change
                 self.parent.parent.data[self.word_index, key] = new_change if key != "level" else int(new_change)
-                self.parent.tree.item(self.tree_item, text=self.item, values=self.parent.get_values(self.item))
+                self.tree.item(self.tree_item, text=self.item, values=self.get_values(self.item))
                 if i == 2:
                     self.parent.parent.data.tag_change = True
         close(self.new_window, self.parent.parent.window)
-        next_item = self.parent.tree.next(self.tree_item)
+        next_item = self.tree.next(self.tree_item)
         if next_item != "":
-            self.parent.tree.selection_set(next_item)
-            self.parent.get_word()
+            self.tree.selection_set(next_item)
+            self.parent.get_word(self.tree, self.get_values)
