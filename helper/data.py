@@ -50,9 +50,6 @@ class MongoDb:
     def get_count(self, item, value):
         return len(self.data[self.data[item] == value])
 
-    def get_index(self, word):
-        return self.data[self.data.word == word].index[0].item()
-
     def get_level_indices(self, level):
         return self.data[self.data.level == level].index.to_numpy()
 
@@ -62,8 +59,15 @@ class MongoDb:
     def get_revised_list(self):
         return self.data[["word", "prompt", "score", "test", "marked", "level", "tag"]].sort_values("word").to_numpy()
 
-    def get_word_data(self):
-        return self.data_col.find({"learnt": False}, {"_id": 0, "word": 1, "data": 1})
+    def get_word_tab(self, word):
+        return self.data[self.data.word == word][["prompt", "level", "tag"]].to_numpy()[0]
+
+    def get_word_data(self, *args):
+        if len(args) == 0:
+            return self.data_col.find({"learnt": False}, {"_id": 0, "word": 1, "data": 1})
+        else:
+            data = self.data[self.data.word == args[0]]
+            return data.index[0].item(), data.to_dict("records")[0]
 
     def insert_one(self, data):
         extra_data = {
@@ -103,6 +107,10 @@ class MongoDb:
     def get_tag_words(self, tag):
         # list of all words with that tag
         return ", ".join(np.sort(self.data[self.data.tag == tag].word.values))
+
+    def get_tag_words_data(self, tag):
+        # list of all words and definitions with that tag
+        return self.data[self.data.tag == tag][["word", "definitions"]].sort_values("word").to_numpy()
 
     def save_tags(self):
         with open("Words.md") as file:
