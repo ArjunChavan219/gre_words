@@ -30,7 +30,7 @@ def get_button(frame, text, color, function, row, col, span, pad):
     return button
 
 
-def get_tree(frame, widths, texts, function, tid):
+def get_tree(frame, widths, texts, function, tid, values):
     style = ttk.Style(frame)
     style.theme_use("aqua")
     style.configure(f"Custom{tid}.Treeview", background="white", foreground="black", font=("Ariel", 16), rowheight=30)
@@ -47,6 +47,9 @@ def get_tree(frame, widths, texts, function, tid):
     for itr, width, text in zip(tree["columns"], widths, texts):
         tree.column(itr, width=width, anchor='c')
         tree.heading(itr, text=text, command=lambda itr_=itr: function(itr_, True))
+    for itr, value in enumerate(values):
+        tree.insert("", 'end', text=itr, values=value, tag=("blue" if itr % 2 != 0 else ""))
+
     tree.tag_configure("blue", background='#b8f7fc')
 
     return tree, style

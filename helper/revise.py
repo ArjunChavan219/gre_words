@@ -21,10 +21,8 @@ class Revise:
 
         # TreeView
         self.tree, self.style = get_tree(self.frame, (150, 600, 150, 150, 150, 150),
-                                         ("Word", "Prompt", "Score", "Tests", "Marked", "Level"), self.sort, 0)
-        for itr in range(len(self.words)):
-            self.tree.insert("", 'end', text=itr, values=(self.get_values(itr)))
-        alternate(self.tree)
+                                         ("Word", "Prompt", "Score", "Tests", "Marked", "Level"), self.sort,
+                                         0, [self.get_values(itr) for itr in range(len(self.words))])
         self.tree.bind("<Double-1>", lambda event: self.get_word(self.tree, self.get_values))
 
         # Query Button
@@ -83,11 +81,8 @@ class Revise:
         def get_table(col):
             frame = Frame(new_window, bg=BACKGROUND_COLOR)
             frame.grid(row=1, column=col[0])
-            tree, style = get_tree(frame, (150, 150), (col[1].title(), "Counts"), None, 1)
-            counts = self.parent.data.get_counts(col[1])
-            for itr, count in enumerate(counts):
-                tree.insert("", 'end', text=itr, values=count)
-            alternate(tree)
+            tree, style = get_tree(frame, (150, 150), (col[1].title(), "Counts"), None, 1,
+                                   self.parent.data.get_counts(col[1]))
             tree.configure(height=5)
 
         [get_table((i, col)) for i, col in enumerate(["level", "test"])]
@@ -158,7 +153,7 @@ class ReviseTab:
         self.frame.grid(row=3, column=0, columnspan=4)
 
         self.entries = [("Prompt", prompt, 1), ("Level", level, 5), ("Tag", tag, 6)]
-        self.guis, self.texts = [self.get_input_gui(i) for i in range(3)], [prompt, str(level), str(tag)]
+        self.guis, self.texts = [self.get_input_gui(i) for i in range(3)], [prompt, str(level), tag]
         self.is_any_changed = False
         if prompt == "":
             self.guis[0].focus_set()

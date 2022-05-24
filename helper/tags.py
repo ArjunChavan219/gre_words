@@ -148,7 +148,6 @@ class Graph:
                         else:
                             self.save_button.grid_forget()
                 else:
-                    print(tag)
                     self.display_tag_words(tag)
                 return
             tag += ".*"
@@ -214,25 +213,17 @@ class Graph:
         canvas.grid(row=1, column=0, columnspan=4, pady=(0, 30))
 
         frame = Frame(new_window, bg=BACKGROUND_COLOR)
-        frame.grid(row=2, column=0)
-        tree, style = get_tree(frame, (150, 750), ("Word", "Prompt"), None, 3)
-        values = self.tags.get_tag_words_data(tag[5:])
-        style.configure("Custom3.Treeview", rowheight=60)
+        frame.grid(row=2, column=0, padx=(50, 50))
+        values = [(val[0], wrap_text(val[1].replace("\n", "; "), 75)) for val in self.tags.get_tag_words_data(tag[5:])]
         length = len(values)
+        tree, style = get_tree(frame, (150, 750), ("Word", "Prompt"), None, 3, values)
+        style.configure("Custom3.Treeview", rowheight=60)
         if length < 10:
             tree.configure(height=length)
             height += length*60
         else:
             height += 600
 
-        def get_values(val):
-            return values[val][0], wrap_text(values[val][1].replace("\n", "; "), 75)
-
-        for itr in range(len(values)):
-            tree.insert("", 'end', text=itr, values=get_values(itr))
-        alternate(tree)
-        tree.bind("<Double-1>", lambda event: self.get_word(tree, get_values))
-
+        tree.bind("<Double-1>", lambda event: self.get_word(tree, lambda i: values[i]))
         get_button(new_window, "Close", NEXT_COLOR, lambda: new_window.destroy(), 3, 0, 4, (25, 0))
-
-        place_window(new_window, 950, height)
+        place_window(new_window, 1050, height)
