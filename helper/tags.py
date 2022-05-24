@@ -6,9 +6,13 @@ from tkinter import messagebox
 
 class Graph:
 
-    def __init__(self, window_function, word, gui, change_function, tags, main_window, parent_window):
-        self.main_window = main_window
+    def __init__(self, add, tags, window_function, parent_window, *args):
+
+        self.add = add
+        self.tags = tags
+        self.window_function = window_function
         self.parent_window = parent_window
+
         self.w_factor, self.h_factor = 65, 65
         self.x_pad, self.y_pad = 15, 5
 
@@ -17,16 +21,20 @@ class Graph:
         self.selected_gui, self.highlighted_gui, self.guis = (-1, -1), (-1, -1), {}
         self.spaces = []
 
-        self.word = word
-        self.window_function = window_function
-        self.change_function = change_function
-        self.tags = tags
-        self.gui = gui
-        self.current_tag = self.tags.get_tag(word)
-        self.selected = "Tags." + self.current_tag
+        if self.add:
+            self.word = args[0]
+            self.gui = args[1]
+            self.change_function = args[2]
+            self.main_window = args[3]
+            self.current_tag = self.tags.get_tag(args[0])
+            self.selected = "Tags." + self.current_tag
+        else:
+            self.selected = ""
+            self.get_word = args[0]
 
     def __call__(self):
-        self.window: Toplevel = self.window_function(("Word Tags", f"Word: {self.word}"))
+        text = f"Word: {self.word}" if self.add else "Tags Revision"
+        self.window: Toplevel = self.window_function(("Word Tags", text))[0]
         self.window.protocol("WM_DELETE_WINDOW", self.close_window)
         self.canvas = Canvas(self.window, background="#8CF3D4")
         self.canvas.grid(row=2, column=0, columnspan=4)
@@ -49,7 +57,8 @@ class Graph:
 
     def close_window(self):
         self.window.unbind_all("<Key>")
-        self.change_function()
+        if self.add:
+            self.change_function()
         self.window.destroy()
 
     def get_tag_shortcuts(self):
@@ -119,23 +128,28 @@ class Graph:
         if identifier[1] != "parent":
             tag = ".".join(self.stack) + "." + self.children[identifier[0]]
             children = self.tags.get_tag_children(tag)
+
             if len(children) == 0:
-                words = wrap_text(self.tags.get_tag_words(tag[5:]), 60)
-                confirm = messagebox.askyesno("Confirm", f"It has the following words:\n{words}")
-                self.main_window.focus_set()
-                self.parent_window.focus_set()
-                self.window.focus_set()
-                if confirm:
-                    self.selected = tag
-                    old_gui = self.selected_gui
-                    self.selected_gui = gui
-                    self.hover(old_gui, False)
-                    self.hover(self.selected_gui, False)
-                    if self.selected[5:] != self.current_tag:
-                        self.save_button.grid(row=0, column=1, pady=(25, 0))
-                        self.save_button.focus_set()
-                    else:
-                        self.save_button.grid_forget()
+                if self.add:
+                    words = wrap_text(self.tags.get_tag_words(tag[5:]), 60)
+                    confirm = messagebox.askyesno("Confirm", f"It has the following words:\n{words}")
+                    self.main_window.focus_set()
+                    self.parent_window.focus_set()
+                    self.window.focus_set()
+                    if confirm:
+                        self.selected = tag
+                        old_gui = self.selected_gui
+                        self.selected_gui = gui
+                        self.hover(old_gui, False)
+                        self.hover(self.selected_gui, False)
+                        if self.selected[5:] != self.current_tag:
+                            self.save_button.grid(row=0, column=1, pady=(25, 0))
+                            self.save_button.focus_set()
+                        else:
+                            self.save_button.grid_forget()
+                else:
+                    print(tag)
+                    self.display_tag_words(tag)
                 return
             tag += ".*"
         else:
@@ -189,3 +203,36 @@ class Graph:
             self.hover(self.selected_gui, False)
         else:
             self.selected_gui = (-1, -1)
+
+    def display_tag_words(self, tag):
+        new_window, _ = self.window_function(("Word Tags", "Tag:"))
+        _.grid(row=0, column=0, columnspan=4, pady=(0, 0))
+        height = 320
+
+        canvas = Canvas(new_window, width=500, height=50, bg=BACKGROUND_COLOR, highlightthickness=0)
+        canvas.create_text(250, 25, text=tag, fill="black", font=("Ariel", 20, "italic"))
+        canvas.grid(row=1, column=0, columnspan=4, pady=(0, 30))
+
+        frame = Frame(new_window, bg=BACKGROUND_COLOR)
+        frame.grid(row=2, column=0)
+        tree, style = get_tree(frame, (150, 750), ("Word", "Prompt"), None, 3)
+        values = self.tags.get_tag_words_data(tag[5:])
+        style.configure("Custom3.Treeview", rowheight=60)
+        length = len(values)
+        if length < 10:
+            tree.configure(height=length)
+            height += length*60
+        else:
+            height += 600
+
+        def get_values(val):
+            return values[val][0], wrap_text(values[val][1].replace("\n", "; "), 75)
+
+        for itr in range(len(values)):
+            tree.insert("", 'end', text=itr, values=get_values(itr))
+        alternate(tree)
+        tree.bind("<Double-1>", lambda event: self.get_word(tree, get_values))
+
+        get_button(new_window, "Close", NEXT_COLOR, lambda: new_window.destroy(), 3, 0, 4, (25, 0))
+
+        place_window(new_window, 950, height)

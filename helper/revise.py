@@ -17,7 +17,7 @@ class Revise:
 
         # Initialize TK Widgets
         self.parent = parent
-        self.frame = self.parent.init_frames(("Revision", "Revision Table"), 2, 2, 1, (50, 0))[0]
+        self.frame = self.parent.init_frames(("Revision", "Revision Table"), 2, 3, 1, (50, 0))[0]
 
         # TreeView
         self.tree, self.style = get_tree(self.frame, (150, 600, 150, 150, 150, 150),
@@ -29,6 +29,7 @@ class Revise:
 
         # Query Button
         get_button(self.frame, "Query", NEXT_COLOR, self.query, 2, 1, 1, (50, 0))
+        get_button(self.frame, "Tags", ENTER_COLOR, self.show_tags, 2, 2, 1, (50, 0))
 
         self.parent.refresh_child(self.frame)
         place_window(self.parent.window, 1400, 600)
@@ -124,7 +125,11 @@ class Revise:
     def get_word(self):
         if len(self.tree.selection()) == 0:
             return
-        ReviseTab(self)
+        ReviseTab(self, tree, get_values)
+
+    def show_tags(self):
+        graph = Graph(False, self.parent.data, self.new_window, self.parent.window, self.get_word)
+        graph()
 
 
 class ReviseTab:
@@ -155,8 +160,8 @@ class ReviseTab:
         self.is_any_changed = False
         if prompt == "":
             self.guis[0].focus_set()
-        self.graph = Graph(parent.new_window, word, self.guis[2], lambda: self.detect_change(2, "Tab"),
-                           parent.parent.data, parent.parent.window, self.new_window)
+        self.graph = Graph(True, parent.parent.data, parent.new_window, self.new_window, word, self.guis[2],
+                           lambda: self.detect_change(2, "Tab"), parent.parent.window)
         self.guis[2].configure(state="disabled")
         self.guis[2].bind("<Button-1>", lambda event: self.graph())
 
