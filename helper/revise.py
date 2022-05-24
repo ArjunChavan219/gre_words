@@ -44,10 +44,10 @@ class Revise:
         canvas.create_text(250, 25, text=text[1], fill="black", font=("Ariel", 40, "italic"))
         canvas.grid(row=0, column=0, columnspan=4, pady=(0, 30))
 
-        return new_window
+        return new_window, canvas
 
     def query(self):
-        new_window = self.new_window(("Word Queries", "Enter Query"))
+        new_window = self.new_window(("Word Queries", "Enter Query"))[0]
         self.style.configure("TCombobox", selectbackground='gray')
         box = ttk.Combobox(new_window, font=("Ariel", 16))
         box.grid(row=1, column=0, columnspan=2)
@@ -78,7 +78,7 @@ class Revise:
         place_window(new_window, 525, 300)
 
     def statistics(self, old_window):
-        new_window = self.new_window(("Word Statistics", "Counts"))
+        new_window = self.new_window(("Word Statistics", "Counts"))[0]
 
         def get_table(col):
             frame = Frame(new_window, bg=BACKGROUND_COLOR)
