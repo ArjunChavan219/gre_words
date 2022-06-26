@@ -24,9 +24,9 @@ def get_widgets(row, col, color, parent, scale):
     return box
 
 
-def get_button(frame, text, color, function, row, col, span, pad):
+def get_button(frame, text, color, function, row, col, span, pad, sticky=""):
     button = Button(frame, text=text, bg=color, fg="black", font=BUTTON_FONT, borderless=1, command=function)
-    button.grid(row=row, column=col, columnspan=span, pady=pad)
+    button.grid(row=row, column=col, columnspan=span, pady=pad, sticky=sticky)
     return button
 
 

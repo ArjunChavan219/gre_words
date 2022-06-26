@@ -17,7 +17,7 @@ class Revise:
 
         # Initialize TK Widgets
         self.parent = parent
-        self.frame = self.parent.init_frames(("Revision", "Revision Table"), 2, 3, 1, (50, 0))[0]
+        self.frame = self.parent.init_frames(("Revision", "Revision Table"), 2, 1, 2, (50, 0))[0]
 
         # TreeView
         self.tree, self.style = get_tree(self.frame, (150, 600, 150, 150, 150, 150),
@@ -26,8 +26,8 @@ class Revise:
         self.tree.bind("<Double-1>", lambda event: self.get_word(self.tree, self.get_values))
 
         # Query Button
-        get_button(self.frame, "Query", NEXT_COLOR, self.query, 2, 1, 1, (50, 0))
-        get_button(self.frame, "Tags", ENTER_COLOR, self.show_tags, 2, 2, 1, (50, 0))
+        get_button(self.frame, "Query", NEXT_COLOR, self.query, 2, 0, 1, (50, 0), sticky="E")
+        get_button(self.frame, "Tags", ENTER_COLOR, self.show_tags, 2, 3, 1, (50, 0), sticky="W")
 
         self.parent.refresh_child(self.frame)
         place_window(self.parent.window, 1400, 600)
