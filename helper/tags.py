@@ -1,14 +1,20 @@
 import numpy as np
 import pandas as pd
 from helper.functions import *
+from helper.data import MongoDb
 from tkinter import messagebox
+from tkinter.simpledialog import askstring
 
 
 class Graph:
 
-    def __init__(self, window_function, word, gui, change_function, tags, main_window, parent_window):
-        self.main_window = main_window
+    def __init__(self, add: bool, tags: MongoDb, window_function, parent_window, *args):
+
+        self.add = add
+        self.tags = tags
+        self.window_function = window_function
         self.parent_window = parent_window
+
         self.w_factor, self.h_factor = 65, 65
         self.x_pad, self.y_pad = 15, 5
 
@@ -17,16 +23,20 @@ class Graph:
         self.selected_gui, self.highlighted_gui, self.guis = (-1, -1), (-1, -1), {}
         self.spaces = []
 
-        self.word = word
-        self.window_function = window_function
-        self.change_function = change_function
-        self.tags = tags
-        self.gui = gui
-        self.current_tag = self.tags.get_tag(word)
-        self.selected = "Tags." + self.current_tag
+        if self.add:
+            self.word = args[0]
+            self.gui = args[1]
+            self.change_function = args[2]
+            self.main_window = args[3]
+            self.current_tag = self.tags.get_tag(args[0])
+            self.selected = "Tags." + self.current_tag
+        else:
+            self.selected = ""
+            self.get_word = args[0]
 
     def __call__(self):
-        self.window: Toplevel = self.window_function(("Word Tags", f"Word: {self.word}"))
+        text = f"Word: {self.word}" if self.add else "Tags Revision"
+        self.window: Toplevel = self.window_function(("Word Tags", text))[0]
         self.window.protocol("WM_DELETE_WINDOW", self.close_window)
         self.canvas = Canvas(self.window, background="#8CF3D4")
         self.canvas.grid(row=2, column=0, columnspan=4)
@@ -34,8 +44,9 @@ class Graph:
 
         button_frame = Frame(self.window, bg=BACKGROUND_COLOR)
         button_frame.grid(row=4, column=0, columnspan=4)
-        get_button(button_frame, "Close", NEXT_COLOR, self.close_window, 0, 0, 1, (25, 0))
-        self.save_button = get_button(button_frame, "Save n Close", "#4FA9EB", self.save, 0, 1, 1, (25, 0))
+        self.add_button = get_button(button_frame, "Add", NEXT_COLOR, self.add_tag, 0, 0, 1, (25, 0))
+        get_button(button_frame, "Close", NEXT_COLOR, self.close_window, 0, 1, 1, (25, 0))
+        self.save_button = get_button(button_frame, "Save n Close", "#4FA9EB", self.save, 0, 2, 1, (25, 0))
         self.save_button.grid_forget()
 
         self.update(self.selected)
@@ -49,7 +60,8 @@ class Graph:
 
     def close_window(self):
         self.window.unbind_all("<Key>")
-        self.change_function()
+        if self.add:
+            self.change_function()
         self.window.destroy()
 
     def get_tag_shortcuts(self):
@@ -119,23 +131,27 @@ class Graph:
         if identifier[1] != "parent":
             tag = ".".join(self.stack) + "." + self.children[identifier[0]]
             children = self.tags.get_tag_children(tag)
+
             if len(children) == 0:
-                words = wrap_text(self.tags.get_tag_words(tag[5:]), 60)
-                confirm = messagebox.askyesno("Confirm", f"It has the following words:\n{words}")
-                self.main_window.focus_set()
-                self.parent_window.focus_set()
-                self.window.focus_set()
-                if confirm:
-                    self.selected = tag
-                    old_gui = self.selected_gui
-                    self.selected_gui = gui
-                    self.hover(old_gui, False)
-                    self.hover(self.selected_gui, False)
-                    if self.selected[5:] != self.current_tag:
-                        self.save_button.grid(row=0, column=1, pady=(25, 0))
-                        self.save_button.focus_set()
-                    else:
-                        self.save_button.grid_forget()
+                if self.add:
+                    words = wrap_text(self.tags.get_tag_words(tag[5:]), 60)
+                    confirm = messagebox.askyesno("Confirm", f"It has the following words:\n{words}")
+                    self.main_window.focus_set()
+                    self.parent_window.focus_set()
+                    self.window.focus_set()
+                    if confirm:
+                        self.selected = tag
+                        old_gui = self.selected_gui
+                        self.selected_gui = gui
+                        self.hover(old_gui, False)
+                        self.hover(self.selected_gui, False)
+                        if self.selected[5:] != self.current_tag:
+                            self.save_button.grid(row=0, column=1, pady=(25, 0))
+                            self.save_button.focus_set()
+                        else:
+                            self.save_button.grid_forget()
+                else:
+                    self.display_tag_words(tag)
                 return
             tag += ".*"
         else:
@@ -189,3 +205,41 @@ class Graph:
             self.hover(self.selected_gui, False)
         else:
             self.selected_gui = (-1, -1)
+
+    def display_tag_words(self, tag):
+        new_window, _ = self.window_function(("Word Tags", "Tag:"))
+        _.grid(row=0, column=0, columnspan=4, pady=(0, 0))
+        height = 320
+
+        canvas = Canvas(new_window, width=500, height=50, bg=BACKGROUND_COLOR, highlightthickness=0)
+        canvas.create_text(250, 25, text=tag, fill="black", font=("Ariel", 20, "italic"))
+        canvas.grid(row=1, column=0, columnspan=4, pady=(0, 30))
+
+        frame = Frame(new_window, bg=BACKGROUND_COLOR)
+        frame.grid(row=2, column=0, padx=(50, 50))
+        values = [(val[0], wrap_text(val[1].replace("\n", "; "), 75)) for val in self.tags.get_tag_words_data(tag[5:])]
+        length = len(values)
+        tree, style = get_tree(frame, (150, 750), ("Word", "Prompt"), None, 3, values)
+        style.configure("Custom3.Treeview", rowheight=60)
+        if length < 10:
+            tree.configure(height=length)
+            height += length*60
+        else:
+            height += 600
+
+        tree.bind("<Double-1>", lambda event: self.get_word(tree, lambda i: values[i]))
+        get_button(new_window, "Close", NEXT_COLOR, lambda: new_window.destroy(), 3, 0, 4, (25, 0))
+        place_window(new_window, 1050, height)
+
+    def add_tag(self):
+        tag_name: str = askstring("Test Specs", "Enter no. of questions you wish to answer:")
+        if tag_name is not None or tag_name == "":
+            tag_name = tag_name.title()
+            if tag_name in self.children:
+                messagebox.showerror("Error", "Tag already exists.")
+                return
+            self.tags.add_tag(self.stack[1:], tag_name)
+            self.update(".".join(self.stack))
+        else:
+            messagebox.showerror("Error", "Enter a tag name.")
+            return

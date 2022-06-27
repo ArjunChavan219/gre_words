@@ -14,11 +14,12 @@ class MongoDb:
         db = client["gre_"]
         self.col = db["words_last_new"]
         self.data_col = db["words_first"]
+        self.tag_col = db["words_tags"]
         self.data: pd.DataFrame = self.get_database()
 
         self.tree = {}
         self.tag_change = False
-        self.get_tag_tree({"Tags": db["words_tags"].find({}, {"_id": 0})[0]}, "Tags", "Tags")
+        self.get_tag_tree({"Tags": self.tag_col.find({}, {"_id": 0})[0]}, "Tags", "Tags")
 
     def get_database(self) -> pd.DataFrame:
         df = pd.DataFrame(self.col.find({}, {"_id": 0}))
@@ -50,9 +51,6 @@ class MongoDb:
     def get_count(self, item, value):
         return len(self.data[self.data[item] == value])
 
-    def get_index(self, word):
-        return self.data[self.data.word == word].index[0].item()
-
     def get_level_indices(self, level):
         return self.data[self.data.level == level].index.to_numpy()
 
@@ -62,8 +60,15 @@ class MongoDb:
     def get_revised_list(self):
         return self.data[["word", "prompt", "score", "test", "marked", "level", "tag"]].sort_values("word").to_numpy()
 
-    def get_word_data(self):
-        return self.data_col.find({"learnt": False}, {"_id": 0, "word": 1, "data": 1})
+    def get_word_tab(self, word):
+        return self.data[self.data.word == word][["prompt", "level", "tag"]].to_numpy()[0]
+
+    def get_word_data(self, *args):
+        if len(args) == 0:
+            return self.data_col.find({"learnt": False}, {"_id": 0, "word": 1, "data": 1})
+        else:
+            data = self.data[self.data.word == args[0]]
+            return data.index[0].item(), data.to_dict("records")[0]
 
     def insert_one(self, data):
         extra_data = {
@@ -104,12 +109,33 @@ class MongoDb:
         # list of all words with that tag
         return ", ".join(np.sort(self.data[self.data.tag == tag].word.values))
 
-    def save_tags(self):
-        with open("Words.md") as file:
-            lines = [line for line in file.readlines() if line.startswith("#")]
+    def get_tag_words_data(self, tag):
+        # list of all words and definitions with that tag
+        return self.data[self.data.tag == tag][["word", "definitions"]].sort_values("word").to_numpy()
 
+    def add_tag(self, parents, tag):
+        tags_dict = self.tag_col.find({}, {"_id": 0})[0]
+        tmp_dict = tags_dict
+        for parent in parents:
+            tmp_dict = tmp_dict[parent]
+        tmp_dict[tag] = None
+        self.tag_col.replace_one({}, tags_dict)
+        self.tree = {}
+        self.tag_change = True
+        self.get_tag_tree({"Tags": tags_dict}, "Tags", "Tags")
+
+    def save_tags(self):
+        lines = []
         words_entry = ""
         stack = []
+
+        def get_display(tags, tag_level):
+            for tag in tags:
+                lines.append("#" * tag_level + " " + tag)
+                if tags[tag] is not None:
+                    get_display(tags[tag], tag_level + 1)
+        get_display(self.tag_col.find({}, {"_id": 0})[0], 1)
+        lines = [line+"\n" for line in lines]
 
         for line in lines:
             level = line.index(" ")

@@ -24,18 +24,18 @@ def get_widgets(row, col, color, parent, scale):
     return box
 
 
-def get_button(frame, text, color, function, row, col, span, pad):
+def get_button(frame, text, color, function, row, col, span, pad, sticky=""):
     button = Button(frame, text=text, bg=color, fg="black", font=BUTTON_FONT, borderless=1, command=function)
-    button.grid(row=row, column=col, columnspan=span, pady=pad)
+    button.grid(row=row, column=col, columnspan=span, pady=pad, sticky=sticky)
     return button
 
 
-def get_tree(frame, widths, texts, function):
+def get_tree(frame, widths, texts, function, tid, values):
     style = ttk.Style(frame)
     style.theme_use("aqua")
-    style.configure("Treeview", background="white", foreground="black", font=("Ariel", 16), rowheight=30)
-    style.configure("Treeview.Heading", foreground="white", font=("Ariel", 20), rowheight=60)
-    tree = ttk.Treeview(frame, selectmode='browse')
+    style.configure(f"Custom{tid}.Treeview", background="white", foreground="black", font=("Ariel", 16), rowheight=30)
+    style.configure(f"Custom{tid}.Treeview.Heading", foreground="white", font=("Ariel", 20), rowheight=60)
+    tree = ttk.Treeview(frame, selectmode='browse', style=f"Custom{tid}.Treeview")
     tree.grid(row=1, column=0, columnspan=4, sticky="news")
     vsb = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
     vsb.grid(row=1, column=3, sticky="nse")
@@ -47,6 +47,9 @@ def get_tree(frame, widths, texts, function):
     for itr, width, text in zip(tree["columns"], widths, texts):
         tree.column(itr, width=width, anchor='c')
         tree.heading(itr, text=text, command=lambda itr_=itr: function(itr_, True))
+    for itr, value in enumerate(values):
+        tree.insert("", 'end', text=itr, values=value, tag=("blue" if itr % 2 != 0 else ""))
+
     tree.tag_configure("blue", background='#b8f7fc')
 
     return tree, style

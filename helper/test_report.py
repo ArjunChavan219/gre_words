@@ -12,9 +12,8 @@ class TestReport:
         # TreeView
         sizes = (600, 60, 200, 200, 150) if self.parent.test_type else (150, 60, 600, 600, 150)
         self.tree, style = get_tree(self.frame, sizes, ("Word", "Score", "Your Answer",
-                                                        "Correct Answer", "Marked"), self.sort)
-        style.configure("Treeview", rowheight=60)
-        self.set_report()
+                                                        "Correct Answer", "Marked"), self.sort, 2, self.set_report())
+        style.configure("Custom2.Treeview", rowheight=60)
 
         self.parent.parent.refresh_child(self.frame)
         place_window(self.parent.parent.window, 1275, 900)
@@ -35,13 +34,15 @@ class TestReport:
         alternate(self.tree)
 
     def set_report(self):
+        values = []
         for itr, (word, options, report) in enumerate(zip(self.parent.words, self.parent.options, self.parent.report)):
             check = "✅" if report == 0 else "❌"
             mark = "❌" if self.parent.marked[itr] else ""
-            values = (wrap_text(word["definitions" if self.parent.test_type else "word"], 75),
-                      check, wrap_text(options[report], 75), wrap_text(options[0], 75), mark)
-            self.tree.insert("", 'end', values=values, tag=("blue" if itr % 2 != 0 else ""))
+            values.append((wrap_text(word["definitions" if self.parent.test_type else "word"], 75),
+                           check, wrap_text(options[report], 75), wrap_text(options[0], 75), mark))
 
             self.parent.parent.data[self.parent.word_indices[itr], "score"] += 1 if report == 0 else 0
             self.parent.parent.data[self.parent.word_indices[itr], "test"] += 1
             self.parent.parent.data[self.parent.word_indices[itr], "marked"] = self.parent.marked[itr]
+
+        return values

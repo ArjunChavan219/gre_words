@@ -17,18 +17,17 @@ class Revise:
 
         # Initialize TK Widgets
         self.parent = parent
-        self.frame = self.parent.init_frames(("Revision", "Revision Table"), 2, 2, 1, (50, 0))[0]
+        self.frame = self.parent.init_frames(("Revision", "Revision Table"), 2, 1, 2, (50, 0))[0]
 
         # TreeView
         self.tree, self.style = get_tree(self.frame, (150, 600, 150, 150, 150, 150),
-                                         ("Word", "Prompt", "Score", "Tests", "Marked", "Level"), self.sort)
-        for itr in range(len(self.words)):
-            self.tree.insert("", 'end', text=itr, values=(self.get_values(itr)))
-        alternate(self.tree)
-        self.tree.bind("<Double-1>", lambda event: self.get_word())
+                                         ("Word", "Prompt", "Score", "Tests", "Marked", "Level"), self.sort,
+                                         0, [self.get_values(itr) for itr in range(len(self.words))])
+        self.tree.bind("<Double-1>", lambda event: self.get_word(self.tree, self.get_values))
 
         # Query Button
-        get_button(self.frame, "Query", NEXT_COLOR, self.query, 2, 1, 1, (50, 0))
+        get_button(self.frame, "Query", NEXT_COLOR, self.query, 2, 0, 1, (50, 0), sticky="E")
+        get_button(self.frame, "Tags", ENTER_COLOR, self.show_tags, 2, 3, 1, (50, 0), sticky="W")
 
         self.parent.refresh_child(self.frame)
         place_window(self.parent.window, 1400, 600)
@@ -43,10 +42,10 @@ class Revise:
         canvas.create_text(250, 25, text=text[1], fill="black", font=("Ariel", 40, "italic"))
         canvas.grid(row=0, column=0, columnspan=4, pady=(0, 30))
 
-        return new_window
+        return new_window, canvas
 
     def query(self):
-        new_window = self.new_window(("Word Queries", "Enter Query"))
+        new_window = self.new_window(("Word Queries", "Enter Query"))[0]
         self.style.configure("TCombobox", selectbackground='gray')
         box = ttk.Combobox(new_window, font=("Ariel", 16))
         box.grid(row=1, column=0, columnspan=2)
@@ -77,16 +76,13 @@ class Revise:
         place_window(new_window, 525, 300)
 
     def statistics(self, old_window):
-        new_window = self.new_window(("Word Statistics", "Counts"))
+        new_window = self.new_window(("Word Statistics", "Counts"))[0]
 
         def get_table(col):
             frame = Frame(new_window, bg=BACKGROUND_COLOR)
             frame.grid(row=1, column=col[0])
-            tree, style = get_tree(frame, (150, 150), (col[1].title(), "Counts"), None)
-            counts = self.parent.data.get_counts(col[1])
-            for itr, count in enumerate(counts):
-                tree.insert("", 'end', text=itr, values=count)
-            alternate(tree)
+            tree, style = get_tree(frame, (150, 150), (col[1].title(), "Counts"), None, 1,
+                                   self.parent.data.get_counts(col[1]))
             tree.configure(height=5)
 
         [get_table((i, col)) for i, col in enumerate(["level", "test"])]
@@ -121,22 +117,28 @@ class Revise:
         final_score = "Not done" if test == 0 else f"{round(score / test * 100, 2)}%"
         return word, prompt, final_score, test, "❌" if marked else "", level, tag
 
-    def get_word(self):
-        if len(self.tree.selection()) == 0:
+    def get_word(self, tree, get_values):
+        if len(tree.selection()) == 0:
             return
-        ReviseTab(self)
+        ReviseTab(self, tree, get_values)
+
+    def show_tags(self):
+        graph = Graph(False, self.parent.data, self.new_window, self.parent.window, self.get_word)
+        graph()
 
 
 class ReviseTab:
 
-    def __init__(self, parent: Revise):
-        self.tree_item = parent.tree.selection()[0]
-        parent.tree.selection_remove(self.tree_item)
-        self.item = parent.tree.item(self.tree_item, "text")
-        word, prompt, score, test, marked, level, tag = parent.get_values(self.item)
-        self.word_index = parent.parent.data.get_index(word)
-        word_data = parent.parent.data[self.word_index]
-        self.new_window = parent.new_window(("Word Revision", f"Word: {word}"))
+    def __init__(self, parent: Revise, tree, get_values):
+        self.tree = tree
+        self.get_values = get_values
+        self.tree_item = tree.selection()[0]
+        self.tree.selection_remove(self.tree_item)
+        self.item = tree.item(self.tree_item, "text")
+        word = self.get_values(self.item)[0]
+        self.word_index, word_data = parent.parent.data.get_word_data(word)
+        prompt, level, tag = word_data["prompt"], word_data["level"], word_data["tag"]
+        self.new_window = parent.new_window(("Word Revision", f"Word: {word}"))[0]
         self.parent = parent
 
         # Labels and Boxes
@@ -151,12 +153,12 @@ class ReviseTab:
         self.frame.grid(row=3, column=0, columnspan=4)
 
         self.entries = [("Prompt", prompt, 1), ("Level", level, 5), ("Tag", tag, 6)]
-        self.guis, self.texts = [self.get_input_gui(i) for i in range(3)], [prompt, str(level), str(tag)]
+        self.guis, self.texts = [self.get_input_gui(i) for i in range(3)], [prompt, str(level), tag]
         self.is_any_changed = False
         if prompt == "":
             self.guis[0].focus_set()
-        self.graph = Graph(parent.new_window, word, self.guis[2], lambda: self.detect_change(2, "Tab"),
-                           parent.parent.data, parent.parent.window, self.new_window)
+        self.graph = Graph(True, parent.parent.data, parent.new_window, self.new_window, word, self.guis[2],
+                           lambda: self.detect_change(2, "Tab"), parent.parent.window)
         self.guis[2].configure(state="disabled")
         self.guis[2].bind("<Button-1>", lambda event: self.graph())
 
@@ -177,7 +179,7 @@ class ReviseTab:
             self.guis[itr].insert("end", self.texts[itr], "centered")
         else:
             self.texts[itr] = self.guis[itr].get("1.0", "end-1c")
-        self.is_any_changed = sum([self.texts[i].strip() != self.entries[i][1] for i in range(3)]) > 0
+        self.is_any_changed = sum([self.texts[i].strip() != str(self.entries[i][1]) for i in range(3)]) > 0
         if self.is_any_changed:
             self.next_button.configure(text="Save and Next")
         else:
@@ -214,11 +216,11 @@ class ReviseTab:
                 self.guis[i].insert("end", new_change, "centered")
                 self.parent.words[self.item][entry[-1]] = new_change
                 self.parent.parent.data[self.word_index, key] = new_change if key != "level" else int(new_change)
-                self.parent.tree.item(self.tree_item, text=self.item, values=self.parent.get_values(self.item))
+                self.tree.item(self.tree_item, text=self.item, values=self.get_values(self.item))
                 if i == 2:
                     self.parent.parent.data.tag_change = True
         close(self.new_window, self.parent.parent.window)
-        next_item = self.parent.tree.next(self.tree_item)
+        next_item = self.tree.next(self.tree_item)
         if next_item != "":
-            self.parent.tree.selection_set(next_item)
-            self.parent.get_word()
+            self.tree.selection_set(next_item)
+            self.parent.get_word(self.tree, self.get_values)
