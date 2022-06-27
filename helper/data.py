@@ -14,11 +14,12 @@ class MongoDb:
         db = client["gre_"]
         self.col = db["words_last_new"]
         self.data_col = db["words_first"]
+        self.tag_col = db["words_tags"]
         self.data: pd.DataFrame = self.get_database()
 
         self.tree = {}
         self.tag_change = False
-        self.get_tag_tree({"Tags": db["words_tags"].find({}, {"_id": 0})[0]}, "Tags", "Tags")
+        self.get_tag_tree({"Tags": self.tag_col.find({}, {"_id": 0})[0]}, "Tags", "Tags")
 
     def get_database(self) -> pd.DataFrame:
         df = pd.DataFrame(self.col.find({}, {"_id": 0}))
@@ -113,11 +114,17 @@ class MongoDb:
         return self.data[self.data.tag == tag][["word", "definitions"]].sort_values("word").to_numpy()
 
     def save_tags(self):
-        with open("Words.md") as file:
-            lines = [line for line in file.readlines() if line.startswith("#")]
-
+        lines = []
         words_entry = ""
         stack = []
+
+        def get_display(tags, tag_level):
+            for tag in tags:
+                lines.append("#" * tag_level + " " + tag)
+                if tags[tag] is not None:
+                    get_display(tags[tag], tag_level + 1)
+        get_display(self.tag_col.find({}, {"_id": 0})[0], 1)
+        lines = [line+"\n" for line in lines]
 
         for line in lines:
             level = line.index(" ")
