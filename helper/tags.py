@@ -1,12 +1,14 @@
 import numpy as np
 import pandas as pd
 from helper.functions import *
+from helper.data import MongoDb
 from tkinter import messagebox
+from tkinter.simpledialog import askstring
 
 
 class Graph:
 
-    def __init__(self, add, tags, window_function, parent_window, *args):
+    def __init__(self, add: bool, tags: MongoDb, window_function, parent_window, *args):
 
         self.add = add
         self.tags = tags
@@ -42,8 +44,9 @@ class Graph:
 
         button_frame = Frame(self.window, bg=BACKGROUND_COLOR)
         button_frame.grid(row=4, column=0, columnspan=4)
-        get_button(button_frame, "Close", NEXT_COLOR, self.close_window, 0, 0, 1, (25, 0))
-        self.save_button = get_button(button_frame, "Save n Close", "#4FA9EB", self.save, 0, 1, 1, (25, 0))
+        self.add_button = get_button(button_frame, "Add", NEXT_COLOR, self.add_tag, 0, 0, 1, (25, 0))
+        get_button(button_frame, "Close", NEXT_COLOR, self.close_window, 0, 1, 1, (25, 0))
+        self.save_button = get_button(button_frame, "Save n Close", "#4FA9EB", self.save, 0, 2, 1, (25, 0))
         self.save_button.grid_forget()
 
         self.update(self.selected)
@@ -227,3 +230,16 @@ class Graph:
         tree.bind("<Double-1>", lambda event: self.get_word(tree, lambda i: values[i]))
         get_button(new_window, "Close", NEXT_COLOR, lambda: new_window.destroy(), 3, 0, 4, (25, 0))
         place_window(new_window, 1050, height)
+
+    def add_tag(self):
+        tag_name: str = askstring("Test Specs", "Enter no. of questions you wish to answer:")
+        if tag_name is not None or tag_name == "":
+            tag_name = tag_name.title()
+            if tag_name in self.children:
+                messagebox.showerror("Error", "Tag already exists.")
+                return
+            self.tags.add_tag(self.stack[1:], tag_name)
+            self.update(".".join(self.stack))
+        else:
+            messagebox.showerror("Error", "Enter a tag name.")
+            return

@@ -113,6 +113,17 @@ class MongoDb:
         # list of all words and definitions with that tag
         return self.data[self.data.tag == tag][["word", "definitions"]].sort_values("word").to_numpy()
 
+    def add_tag(self, parents, tag):
+        tags_dict = self.tag_col.find({}, {"_id": 0})[0]
+        tmp_dict = tags_dict
+        for parent in parents:
+            tmp_dict = tmp_dict[parent]
+        tmp_dict[tag] = None
+        self.tag_col.replace_one({}, tags_dict)
+        self.tree = {}
+        self.tag_change = True
+        self.get_tag_tree({"Tags": tags_dict}, "Tags", "Tags")
+
     def save_tags(self):
         lines = []
         words_entry = ""
